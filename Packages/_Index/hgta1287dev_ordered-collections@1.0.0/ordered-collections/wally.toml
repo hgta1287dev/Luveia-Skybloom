@@ -1,0 +1,10 @@
+[package]
+name = "hgta1287dev/ordered-collections"
+version = "1.0.0"
+authors = ["hoamjg"]
+license = "MIT"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+OrderedSet = "hgta1287dev/ordered-set@1.2.0"

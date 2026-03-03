@@ -5,21 +5,153 @@
     "ReplicatedStorage": {
       "Shared": {
         "$className": "Folder",
-        "Utils": {
-          "$className": "Folder"
-        },
         "Configs": {
-          "$className": "Folder"
+          "$className": "Folder",
+          "GlobalConfig": {
+            "$path": "src/configs/GlobalConfig.luau"
+          },
+          "KnitMessageConfig": {
+            "$path": "src/configs/KnitMessageConfig.luau"
+          }
+        },
+        "Core": {
+          "$className": "Folder",
+          "LoggerManager": {
+            "$path": "src/core/LoggerManager"
+          }
+        },
+        "Ecs": {
+          "$className": "Folder",
+          "Components": {
+            "$className": "Folder",
+            "ModelComponent": {
+              "$path": "src/ecs/Components/ModelComponent.luau"
+            },
+            "Plants": {
+              "$className": "Folder",
+              "GrowthComponent": {
+                "$path": "src/ecs/Components/Plants/GrowthComponent.luau"
+              },
+              "PlantNodeComponent": {
+                "$path": "src/ecs/Components/Plants/PlantNodeComponent.luau"
+              },
+              "PlantTagComponent": {
+                "$path": "src/ecs/Components/Plants/PlantTagComponent.luau"
+              }
+            },
+            "TransformComponent": {
+              "$path": "src/ecs/Components/TransformComponent.luau"
+            }
+          },
+          "ECS": {
+            "$path": "src/ecs/ECS.luau"
+          },
+          "Factories": {
+            "$className": "Folder",
+            "Plants": {
+              "$className": "Folder",
+              "Bush": {
+                "$path": "src/ecs/Factories/Plants/Bush.luau"
+              }
+            }
+          },
+          "Systems": {
+            "$className": "Folder",
+            "Models": {
+              "$className": "Folder",
+              "ModelSystem": {
+                "$path": "src/ecs/Systems/Models/ModelSystem.luau"
+              }
+            },
+            "Nodes": {
+              "$className": "Folder",
+              "NodeSystem": {
+                "$path": "src/ecs/Systems/Nodes/NodeSystem.luau"
+              }
+            },
+            "TestSystem": {
+              "$className": "Folder",
+              "TestSystemClient": {
+                "$path": "src/ecs/Systems/TestSystem/Client.luau"
+              }
+            }
+          }
         },
         "Services": {
           "$className": "Folder",
+          "CameraProxyService": {
+            "$className": "Folder",
+            "CameraProxyContainer": {
+              "$path": "src/services/CameraProxyService/CameraProxyContainer.luau"
+            },
+            "CameraProxyFactory": {
+              "$path": "src/services/CameraProxyService/CameraProxyFactory.luau"
+            },
+            "CameraProxyServiceClient": {
+              "$path": "src/services/CameraProxyService/Client.luau"
+            }
+          },
           "CameraService": {
             "$className": "Folder",
+            "CameraRemote": {
+              "$path": "src/services/CameraService/CameraRemote.luau"
+            },
             "CameraServiceClient": {
               "$path": "src/services/CameraService/Client.luau"
             },
             "ExternalCameraService": {
               "$path": "src/services/CameraService/ExternalCameraService.luau"
+            }
+          },
+          "CharacterService": {
+            "$className": "Folder",
+            "CharacterServiceClient": {
+              "$path": "src/services/CharacterService/Client.luau"
+            }
+          },
+          "GameStateService": {
+            "$className": "Folder",
+            "GameStateServiceClient": {
+              "$path": "src/services/GameStateService/Client.luau"
+            },
+            "GameStates": {
+              "$path": "src/services/GameStateService/GameStates.luau"
+            }
+          },
+          "LightingService": {
+            "$className": "Folder",
+            "LightingServiceClient": {
+              "$path": "src/services/LightingService/Client.luau"
+            },
+            "LightingComposer": {
+              "$path": "src/services/LightingService/LightingComposer.luau"
+            },
+            "LightingManager": {
+              "$path": "src/services/LightingService/LightingManager.luau"
+            },
+            "LightingPresets": {
+              "$path": "src/services/LightingService/LightingPresets.luau"
+            },
+            "LightingSemantic": {
+              "$path": "src/services/LightingService/LightingSemantic.luau"
+            },
+            "LightingTypes": {
+              "$path": "src/services/LightingService/LightingTypes.luau"
+            }
+          },
+          "MapService": {
+            "$className": "Folder",
+            "MapServiceClient": {
+              "$path": "src/services/MapService/Client.luau"
+            },
+            "MapContainer": {
+              "$path": "src/services/MapService/MapContainer.luau"
+            },
+            "MapFactory": {
+              "$path": "src/services/MapService/MapFactory.luau"
+            },
+            "MapModulesManager": {
+              "$path": "src/services/MapService/MapModulesManager.luau"
             }
           },
           "RoomService": {
@@ -34,6 +166,12 @@
               "$path": "src/services/RoomService/RoomTypes.luau"
             }
           },
+          "TestService": {
+            "$className": "Folder",
+            "TestServiceClient": {
+              "$path": "src/services/TestService/Client.luau"
+            }
+          },
           "WindService": {
             "$className": "Folder",
             "WindServiceClient": {
@@ -44,8 +182,17 @@
             }
           }
         },
-        "Classes": {
-          "$className": "Folder"
+        "Types": {
+          "$className": "Folder",
+          "GameTypes": {
+            "$path": "src/types/GameTypes.luau"
+          }
+        },
+        "Utils": {
+          "$className": "Folder",
+          "CframeBuffer": {
+            "$path": "src/utils/CframeBuffer.luau"
+          }
         }
       },
       "Packages": {
@@ -59,20 +206,67 @@
       "Server": {
         "$path": "src/startup/Server.server.luau"
       },
+      "ServerPackages": {
+        "$path": "ServerPackages"
+      },
+      "ServerBootstrap": {
+        "$path": "src/startup/ServerBootstrap"
+      },
       "Services": {
         "$className": "Folder",
+        "CameraProxyService": {
+          "$className": "Folder",
+          "CameraProxyServiceServer": {
+            "$path": "src/services/CameraProxyService/Server.luau"
+          }
+        },
+        "CharacterService": {
+          "$className": "Folder",
+          "CharacterServiceServer": {
+            "$path": "src/services/CharacterService/Server.luau"
+          }
+        },
+        "GameStateService": {
+          "$className": "Folder",
+          "GameStateServiceServer": {
+            "$path": "src/services/GameStateService/Server.luau"
+          }
+        },
+        "MapService": {
+          "$className": "Folder",
+          "MapServiceServer": {
+            "$path": "src/services/MapService/Server.luau"
+          }
+        },
         "RoomService": {
           "$className": "Folder",
           "RoomServiceServer": {
             "$path": "src/services/RoomService/Server.luau"
           }
+        },
+        "TestService": {
+          "$className": "Folder",
+          "TestServiceServer": {
+            "$path": "src/services/TestService/Server.luau"
+          }
         }
       },
-      "Modules": {
-        "$className": "Folder"
-      },
-      "ServerPackages": {
-        "$path": "ServerPackages"
+      "Ecs": {
+        "$className": "Folder",
+        "Systems": {
+          "$className": "Folder",
+          "TestSystem": {
+            "$className": "Folder",
+            "TestSystemServer": {
+              "$path": "src/ecs/Systems/TestSystem/Server.luau"
+            }
+          }
+        }
+      }
+    },
+    "ReplicatedFirst": {
+      "First": {
+        "$path": "src/startup/First.client.luau"
       }
     },
     "StarterPlayer": {
@@ -80,8 +274,11 @@
         "Client": {
           "$path": "src/startup/Client.client.luau"
         },
-        "MountUI": {
-          "$path": "src/startup/MountUI.luau"
+        "ClientBootstrap": {
+          "$path": "src/startup/ClientBootstrap"
+        },
+        "SharedBootstrap": {
+          "$path": "src/startup/SharedBootstrap"
         }
       }
     }

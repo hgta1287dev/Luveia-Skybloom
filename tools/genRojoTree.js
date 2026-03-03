@@ -55,10 +55,6 @@ const tree = {
     ReplicatedStorage: {
       Shared: {
         $className: "Folder",
-        Utils: { $className: "Folder", },
-        Configs: { $className: "Folder", },
-        Services: { $className: "Folder", },
-        Classes: {  $className: "Folder", },
       },
       Packages: { $path: "Packages", },
       UI: { $path: "src/ui", },
@@ -66,15 +62,21 @@ const tree = {
 
     ServerScriptService: {
       Server: { $path: "src/startup/Server.server.luau", },
-      Services: { $className: "Folder", },
-      Modules: { $className: "Folder", },
       ServerPackages: { $path: "ServerPackages", },
+      ServerBootstrap: { $path: "src/startup/ServerBootstrap" },
+
+      Services: { $className: "Folder", },
+    },
+
+    ReplicatedFirst: {
+      First: { $path: "src/startup/First.client.luau", },
     },
 
     StarterPlayer: {
       StarterPlayerScripts: {
         Client: { $path: "src/startup/Client.client.luau", },
-        MountUI: { $path: "src/startup/MountUI.luau" },
+        ClientBootstrap: { $path: "src/startup/ClientBootstrap" },
+        SharedBootstrap: { $path: "src/startup/SharedBootstrap" },
       },
     },
   }

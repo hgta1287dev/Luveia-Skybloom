@@ -128,6 +128,18 @@ local cameraSettings = {
 		MaxZoom = 0,
 		BodyFollow = true,
 	},
+	["Orbital"] = {
+		Wobble = 2,
+		CharacterVisibility = "All",
+		Smoothness = 0.9,
+		Zoom = 10,
+		AlignChar = false,
+		Offset = CFrame.new(0, 0, 0),
+		LockMouse = false,
+		MinZoom = 10,
+		MaxZoom = 25,
+		BodyFollow = true,
+	},
 	["ThirdPerson"] = {
 		Wobble = 2,
 		CharacterVisibility = "All",
@@ -137,7 +149,7 @@ local cameraSettings = {
 		Offset = CFrame.new(0, 0, 0),
 		LockMouse = false,
 		MinZoom = 5,
-		MaxZoom = 15,
+		MaxZoom = 25,
 		BodyFollow = true,
 	},
 	["ShiftLock"] = {
@@ -172,26 +184,35 @@ local connectionList: { RBXScriptConnection } = {}
 --> For camera views
 local propertyTypes = {
 	["CharacterVisibility"] = "All",
-	["Smoothness"] = 0.5, --> If you're looking to get a smooth effect, I HIGHLY suggest values of 0.3+
-	["Zoom"] = 10,
+	["Smoothness"] = 0.2, --> If you're looking to get a smooth effect, I HIGHLY suggest values of 0.3+
+	["Zoom"] = 20,
 	["RotSmoothness"] = 1,
 	["AlignChar"] = false,
 	["Offset"] = CFrame.new(),
-	["MinZoom"] = 5,
-	["MaxZoom"] = 15,
+	["MinZoom"] = 8,
+	["MaxZoom"] = 25,
 	["LockMouse"] = false,
 	["BodyFollow"] = true,
-	["Wobble"] = 0,
+	["Wobble"] = 0.1,
 }
+
+local function createHost()
+	local part = Instance.new("Part")
+	part.Name = "Host"
+	part.Anchored = true
+	part.CanCollide = false
+	part.Transparency = 0.5
+	part.Parent = workspace
+
+	return part
+end
 
 ---> Module <---
 local CameraService = {
 	Offset = CFrame.new(),
 	TiltFactor = CFrame.fromEulerAnglesYXZ(0, 0, 0),
 	Angle = 60,
-	Host = currentCharacter:WaitForChild("Humanoid").RigType == Enum.HumanoidRigType.R15
-			and currentCharacter:WaitForChild("HumanoidRootPart")
-		or currentCharacter:WaitForChild("Torso"),
+	Host = createHost(), -- TODO Test here!
 }
 
 ---> Camera System Functions <---
@@ -749,7 +770,7 @@ player.CharacterAdded:Connect(function(char)
 		or (tostring(CameraService.Host.Parent) == player.Name)
 	then
 		currentCharacter = char
-		CameraService:SetCameraHost()
+		CameraService:SetCameraHost(char:WaitForChild("HumanoiRootPart"))
 	end
 end)
 

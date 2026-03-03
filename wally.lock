@@ -5,7 +5,7 @@ registry = "test"
 [[package]]
 name = "asus/frame-pixelated"
 version = "0.1.0"
-dependencies = [["BufferUtil", "sleitnick/buffer-util@0.3.2"], ["Component", "sleitnick/component@2.4.8"], ["EnumList", "sleitnick/enum-list@2.1.0"], ["Fusion", "elttob/fusion@0.3.0"], ["Janitor", "howmanysmall/janitor@1.18.3"], ["Knit", "sleitnick/knit@1.7.0"], ["Loader", "sleitnick/loader@1.0.3"], ["Networker", "leifstout/networker@0.3.1"], ["OrderedSet", "hgta1287dev/ordered-set@1.2.0"], ["Promise", "evaera/promise@4.0.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"], ["Sift", "csqrl/sift@0.0.2"], ["Signal", "sleitnick/signal@2.0.3"], ["Silo", "sleitnick/silo@0.1.2"], ["Streamable", "sleitnick/streamable@1.2.4"], ["Symbol", "sleitnick/symbol@2.0.1"], ["TableUtil", "sleitnick/table-util@1.2.1"], ["Timer", "sleitnick/timer@1.1.2"], ["ProfileService", "firebird702/profileservice@1.1.0"]]
+dependencies = [["BufferUtil", "sleitnick/buffer-util@0.3.2"], ["EnumList", "sleitnick/enum-list@2.1.0"], ["Fusion", "elttob/fusion@0.3.0"], ["Janitor", "howmanysmall/janitor@1.18.3"], ["Knit", "sleitnick/knit@1.7.0"], ["Loader", "sleitnick/loader@1.0.3"], ["Matter", "matter-ecs/matter@0.8.5"], ["Networker", "leifstout/networker@0.3.1"], ["OrderedCollections", "hgta1287dev/ordered-collections@1.0.0"], ["OrderedSet", "hgta1287dev/ordered-set@1.2.0"], ["Promise", "evaera/promise@4.0.0"], ["React", "jsdotlua/react@17.2.1"], ["ReactRoblox", "jsdotlua/react-roblox@17.2.1"], ["RobloxStateMachine", "prooheckcp/robloxstatemachine@1.1.7"], ["Sift", "csqrl/sift@0.0.2"], ["Signal", "sleitnick/signal@2.0.3"], ["Silo", "sleitnick/silo@0.1.2"], ["StateMachine", "hgta1287dev/guarded-state-machine@1.0.3"], ["Streamable", "sleitnick/streamable@1.2.4"], ["Symbol", "sleitnick/symbol@2.0.1"], ["TableToBuffer", "secondnewtonlaw/tabletobuffer@0.1.5"], ["TableUtil", "sleitnick/table-util@1.2.1"], ["Timer", "sleitnick/timer@1.1.2"], ["ProfileService", "firebird702/profileservice@1.1.0"]]
 
 [[package]]
 name = "csqrl/sift"
@@ -26,6 +26,16 @@ dependencies = []
 name = "firebird702/profileservice"
 version = "1.1.0"
 dependencies = []
+
+[[package]]
+name = "hgta1287dev/guarded-state-machine"
+version = "1.0.3"
+dependencies = [["Promise", "evaera/promise@4.0.0"], ["Signal", "sleitnick/signal@2.0.3"]]
+
+[[package]]
+name = "hgta1287dev/ordered-collections"
+version = "1.0.0"
+dependencies = [["OrderedSet", "hgta1287dev/ordered-set@1.2.0"]]
 
 [[package]]
 name = "hgta1287dev/ordered-set"
@@ -133,6 +143,21 @@ version = "0.3.1"
 dependencies = [["Signal", "sleitnick/signal@2.0.3"]]
 
 [[package]]
+name = "matter-ecs/matter"
+version = "0.8.5"
+dependencies = []
+
+[[package]]
+name = "prooheckcp/robloxstatemachine"
+version = "1.1.7"
+dependencies = []
+
+[[package]]
+name = "secondnewtonlaw/tabletobuffer"
+version = "0.1.5"
+dependencies = []
+
+[[package]]
 name = "sleitnick/buffer-util"
 version = "0.3.2"
 dependencies = []
@@ -141,11 +166,6 @@ dependencies = []
 name = "sleitnick/comm"
 version = "1.0.1"
 dependencies = [["Option", "sleitnick/option@1.0.5"], ["Promise", "evaera/promise@4.0.0"], ["Signal", "sleitnick/signal@2.0.3"]]
-
-[[package]]
-name = "sleitnick/component"
-version = "2.4.8"
-dependencies = [["Promise", "evaera/promise@4.0.0"], ["Signal", "sleitnick/signal@2.0.3"], ["Symbol", "sleitnick/symbol@2.0.1"], ["Trove", "sleitnick/trove@1.8.0"]]
 
 [[package]]
 name = "sleitnick/enum-list"
@@ -205,9 +225,4 @@ dependencies = [["Signal", "sleitnick/signal@1.5.0"]]
 [[package]]
 name = "sleitnick/trove"
 version = "0.4.2"
-dependencies = []
-
-[[package]]
-name = "sleitnick/trove"
-version = "1.8.0"
 dependencies = []

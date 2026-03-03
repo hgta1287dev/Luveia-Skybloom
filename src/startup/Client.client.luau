@@ -1,17 +1,23 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
+local Controllers = require(script.Parent.Controllers)
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local MountUI = require(script.Parent.MountUI)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
 
-local function init()
-	MountUI()
-end
+-- * Logger Setup
+LoggerManager:Init()
+local Logger = LoggerManager:CreateLogger()
 
--- Knit Setup
-Knit.AddControllersDeep(ReplicatedStorage.Shared)
-Knit:Start()
+-- * React Setup
+
+-- * ECS Setup
+
+-- * Knit Setup
+Controllers:Init()
+Knit.Start()
 	:andThen(function()
-		warn("[CLIENT]: Knit Started!")
-		init()
+		Logger:Info("Knit Started Successfully!")
 	end)
-	:catch(error)
+	:catch(function(...)
+		Logger:Error(...)
+	end)
+	:await()

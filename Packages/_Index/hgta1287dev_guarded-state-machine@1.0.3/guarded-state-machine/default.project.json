@@ -1,0 +1,6 @@
+{
+  "name": "guarded-state-machine",
+  "tree": {
+    "$path": "lib"
+  }
+}

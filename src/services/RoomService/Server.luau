@@ -2,9 +2,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local OrderedSet = require(ReplicatedStorage.Packages._Index["hgta1287dev_ordered-set@1.2.0"]["ordered-set"])
+local KnitMessageConfig = require(ReplicatedStorage.Shared.Configs.KnitMessageConfig)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
 local RoomConfig = require(ReplicatedStorage.Shared.Services.RoomService.RoomConfig)
 local RoomTypes = require(ReplicatedStorage.Shared.Services.RoomService.RoomTypes)
 
+local Logger = LoggerManager:CreateLogger("RoomService")
 local RoomService = Knit.CreateService({
 	Name = "RoomService",
 	Client = {
@@ -55,14 +58,18 @@ type SerializedRoomData = RoomTypes.SerializedRoomData
 
 --* Knit
 function RoomService:KnitInit()
+	Logger:Info(KnitMessageConfig.Initializing)
 	self.rooms = {} :: { [string]: RoomData }
 	self.playerRoom = {} :: { [Player]: string }
+	Logger:Info(KnitMessageConfig.Initialized)
 end
 
 function RoomService:KnitStart()
+	Logger:Info(KnitMessageConfig.Starting)
 	game.Players.PlayerRemoving:Connect(function(player)
 		self:LeaveRoom(player)
 	end)
+	Logger:Info(KnitMessageConfig.Started)
 end
 
 --* Methods

@@ -1,0 +1,18 @@
+[package]
+name = "secondnewtonlaw/tabletobuffer"
+description = "A utility to convert tables into buffers"
+version = "0.1.5"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+license = "MIT"
+exclude = ["**"]
+include = [
+    "default.project.json",
+    "lib",
+    "lib/**",
+    "LICENSE",
+    "wally.toml",
+    "README.md",
+]
+
+[dependencies]
