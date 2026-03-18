@@ -1,0 +1,3 @@
+[submodule "Packages/ParallelWorker"]
+	path = Packages/ParallelWorker
+	url = https://github.com/MaximumADHD/Roblox-Parallel-Worker
