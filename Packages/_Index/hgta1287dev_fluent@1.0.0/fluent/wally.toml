@@ -1,0 +1,10 @@
+[package]
+name = "hgta1287dev/fluent"
+version = "1.0.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+description = "A clean and modern UI Library for Roblox, originally by dawid-scripts."
+license = "MIT"
+authors = ["dawid-scripts", "YourName <email@example.com>"]
+
+[dependencies]

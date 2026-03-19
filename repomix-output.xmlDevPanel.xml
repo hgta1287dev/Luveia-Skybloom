@@ -1,0 +1,203 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: src/startup/ClientStartup/DevPanel
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+src/startup/ClientStartup/DevPanel/DevControllerPanel.luau
+src/startup/ClientStartup/DevPanel/DevOutputConsole.luau
+src/startup/ClientStartup/DevPanel/DevStates.luau
+src/startup/ClientStartup/DevPanel/init.luau
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/startup/ClientStartup/DevPanel/DevControllerPanel.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DevStates = require(script.Parent.DevStates)
+local Iris = require(ReplicatedStorage.Packages.Iris)
+
+local ControlPanel = {}
+
+function ControlPanel:Render()
+	Iris.Window({ "Control Panel" }, { isOpened = DevStates.ShowControllerPanel })
+	do
+		Iris.MenuBar()
+		do
+			Iris.Menu({ "Tools" })
+			do
+				Iris.MenuToggle({ "Output Console" }, { isChecked = DevStates.ShowOutputConsole })
+			end
+			Iris.End()
+		end
+		Iris.End()
+	end
+	Iris.End()
+end
+
+return ControlPanel
+</file>
+
+<file path="src/startup/ClientStartup/DevPanel/DevOutputConsole.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Iris = require(ReplicatedStorage.Packages.Iris)
+local OrderedCollections = require(ReplicatedStorage.Packages.OrderedCollections)
+
+local LogWindow = {}
+local logs = OrderedCollections.Set.new()
+
+-- * Types
+export type MessageType = "Log" | "Info" | "Warning" | "Error" | "Success" | "Debug"
+export type MessageContext = {
+	message: string,
+	messageType: MessageType,
+}
+
+-- * Constant
+local MAX_LOGS = 30
+local COLORS = {
+	Log = Color3.fromRGB(255, 255, 255),
+	Info = Color3.fromRGB(0, 255, 255),
+	Warning = Color3.fromRGB(255, 255, 0),
+	Error = Color3.fromRGB(255, 0, 0),
+	Success = Color3.fromRGB(0, 255, 0),
+	Debug = Color3.fromRGB(255, 0, 255),
+}
+local MESSAGE_FILTERS = { "All", "Log", "Info", "Warning", "Error", "Success", "Debug" }
+local filterStates = {
+	All = Iris.State(true),
+	Log = Iris.State(true),
+	Info = Iris.State(true),
+	Warning = Iris.State(true),
+	Error = Iris.State(true),
+	Success = Iris.State(true),
+	Debug = Iris.State(true),
+}
+
+-- * API
+function LogWindow:SendMessage(message: string, messageType: MessageType?)
+	if logs:Size() >= MAX_LOGS then
+		logs:PopFront()
+	end
+
+	local context: MessageContext = {
+		message = `[{os.date("%H:%M:%S")}]: {message}`,
+		messageType = messageType or "Log",
+	}
+	print(context)
+
+	logs:PushBack(context)
+end
+
+function LogWindow:Render()
+	Iris.Window({ "Log Window" })
+	do
+		Iris.SeparatorText({ "Log Filters" })
+		Iris.SameLine()
+		do
+			for _, fType in ipairs(MESSAGE_FILTERS) do
+				Iris.Checkbox({ fType }, { isChecked = filterStates[fType] })
+			end
+		end
+		Iris.End()
+		Iris.Separator()
+
+		Iris.SeparatorText({ "Output" })
+		Iris.Indent()
+		do
+			logs:Each(function(context: MessageContext)
+				if filterStates.All:get() == true or filterStates[context.messageType]:get() == true then
+					Iris.TextColored({ context.message }, { color = COLORS[context.messageType] })
+				end
+			end)
+		end
+		Iris.End()
+	end
+	Iris.End()
+end
+
+return LogWindow
+</file>
+
+<file path="src/startup/ClientStartup/DevPanel/DevStates.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Iris = require(ReplicatedStorage.Packages.Iris)
+
+local States = {
+	ShowControllerPanel = Iris.State(true),
+	ShowOutputConsole = Iris.State(false),
+}
+
+return States
+</file>
+
+<file path="src/startup/ClientStartup/DevPanel/init.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local DevControllerPanel = require(script.DevControllerPanel)
+local DevOutputConsole = require(script.DevOutputConsole)
+local DevStates = require(script.DevStates)
+local Iris = require(ReplicatedStorage.Packages.Iris)
+
+local DevPanel = {}
+
+function DevPanel:Init()
+	Iris.Init()
+	Iris:Connect(function()
+		if DevStates.ShowControllerPanel:get() then
+			DevControllerPanel:Render()
+		else
+			if Iris.Button({ "Open DevConsole" }).clicked() then
+				DevStates.ShowControllerPanel:set(true)
+			end
+			return
+		end
+
+		if DevStates.ShowOutputConsole:get() then
+			DevOutputConsole:Render()
+		end
+	end)
+end
+
+return DevPanel
+</file>
+
+</files>
