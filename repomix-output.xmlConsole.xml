@@ -1,0 +1,627 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: src/core/LoggerManager, src/startup/ClientStartup/DevPanel
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+src/core/LoggerManager/init.luau
+src/core/LoggerManager/Logger.luau
+src/core/LoggerManager/LoggerTypes.luau
+src/startup/ClientStartup/DevPanel/DevControllerPanel.luau
+src/startup/ClientStartup/DevPanel/DevOutputConsole.luau
+src/startup/ClientStartup/DevPanel/DevStates.luau
+src/startup/ClientStartup/DevPanel/init.luau
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/core/LoggerManager/LoggerTypes.luau">
+-- * Types
+export type LogLevel = "Log" | "Info" | "Warning" | "Error" | "Success" | "Debug"
+export type LogSide = "Server" | "Client"
+export type LogEntry = {
+	content: string,
+	level: LogLevel,
+	timestamp: typeof(DateTime.now()),
+}
+
+-- * Constants
+local Levels = {
+	Log = "Log",
+	Info = "Info",
+	Warn = "Warning",
+	Error = "Error",
+	Success = "Success",
+	Debug = "Debug",
+}
+local Sides = {
+	Server = "Server",
+	Client = "Client",
+}
+
+-- * Exports
+return {
+	Levels = Levels,
+	Sides = Sides,
+}
+</file>
+
+<file path="src/startup/ClientStartup/DevPanel/DevControllerPanel.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DevStates = require(script.Parent.DevStates)
+local Iris = require(ReplicatedStorage.Packages.Iris)
+
+local ControlPanel = {}
+
+function ControlPanel:Render()
+	Iris.Window({ "Control Panel" }, { isOpened = DevStates.ShowControllerPanel })
+	do
+		Iris.MenuBar()
+		do
+			Iris.Menu({ "Tools" })
+			do
+				Iris.MenuToggle({ "Output Console" }, { isChecked = DevStates.ShowOutputConsole })
+			end
+			Iris.End()
+		end
+		Iris.End()
+	end
+	Iris.End()
+end
+
+return ControlPanel
+</file>
+
+<file path="src/startup/ClientStartup/DevPanel/DevOutputConsole.luau">
+local LocalizationService = game:GetService("LocalizationService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Janitor = require(ReplicatedStorage.Packages.Janitor)
+local TableUtil = require(ReplicatedStorage.Packages.TableUtil)
+local DevStates = require(script.Parent.DevStates)
+local Iris = require(ReplicatedStorage.Packages._Index["sirmallard_iris@2.5.0"].iris)
+local IrisTypes = require(ReplicatedStorage.Packages._Index["sirmallard_iris@2.5.0"].iris.Types)
+local OrderedCollections =
+	require(ReplicatedStorage.Packages._Index["hgta1287dev_ordered-collections@1.0.0"]["ordered-collections"])
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+
+local OutputConsole = {}
+OutputConsole.__index = OutputConsole
+
+-- * Types
+type Set<T> = OrderedCollections.Set<T>
+type State<T> = IrisTypes.State<T>
+
+export type MessageType = "Log" | "Info" | "Warning" | "Error" | "Success" | "Debug"
+export type MessageContext = {
+	message: string,
+	messageType: MessageType,
+	date: typeof(DateTime.now()),
+}
+
+-- export type OutputConsoleProps = {
+-- 	maxLog: number?,
+-- 	maxOutput: number?,
+-- 	colors: { [MessageType]: Color3 }?,
+-- }
+export type OutputConsoleData = {
+	maxLog: number,
+	maxOutput: number,
+	colors: { [MessageType]: Color3 },
+
+	_messageBuffer: Set<MessageContext>,
+	_filterStates: { [MessageType]: State<boolean> },
+	_filterAllState: State<boolean>,
+	_fullFilterState: State<boolean>,
+
+	_showDate: State<boolean>,
+
+	_janitor: typeof(Janitor.new()),
+}
+export type OutputConsole = typeof(setmetatable({} :: OutputConsoleData, OutputConsole))
+
+-- * Default Config
+local MAX_LOGS = 100000
+local MAX_OUTPUT = 200
+local COLORS = {
+	Log = Color3.fromRGB(255, 255, 255),
+	Info = Color3.fromRGB(0, 255, 255),
+	Warning = Color3.fromRGB(255, 255, 0),
+	Error = Color3.fromRGB(255, 0, 0),
+	Success = Color3.fromRGB(0, 255, 0),
+	Debug = Color3.fromRGB(255, 0, 255),
+}
+-- * Constants
+local messageTypes: { MessageType } = { "Log", "Info", "Warning", "Error", "Success", "Debug" }
+local filterTypes: { MessageType | "All" } = TableUtil.Assign({ "All" }, messageTypes)
+OutputConsole.MessageTypes = messageTypes
+OutputConsole.FilterTypes = filterTypes
+
+-- * Helpers
+local function eachMessageType(callback: (messageType: MessageType) -> ())
+	for _, fType in ipairs(messageTypes) do
+		callback(fType)
+	end
+end
+
+function OutputConsole:_eachFilterStates(callback: (messageType: MessageType, state: State<boolean>) -> ())
+	eachMessageType(function(messageType: MessageType)
+		callback(messageType, self._filterStates[messageType])
+	end)
+end
+
+-- * Constructor
+function OutputConsole.new(): OutputConsole
+	local self = setmetatable(
+		{
+			maxLog = MAX_LOGS,
+			maxOutput = MAX_OUTPUT,
+			colors = COLORS,
+
+			_messageBuffer = OrderedCollections.Set.new(),
+			_filterStates = {},
+			_filterAllState = Iris.State(true),
+			_fullFilterState = Iris.State(true),
+
+			_showDate = Iris.State(true),
+			_showStartTime = Iris.State(true),
+
+			_janitor = Janitor.new(),
+		} :: OutputConsoleData,
+		OutputConsole
+	) :: OutputConsole
+
+	eachMessageType(function(messageType: string)
+		self._filterStates[messageType] = Iris.State(true)
+	end)
+
+	self._janitor:Add(
+		LoggerManager.MessageOut:Connect(function(message: string, level: MessageType)
+			self:SendMessage(message, level)
+		end),
+		"Disconnect"
+	)
+
+	return self
+end
+
+-- * API
+function OutputConsole:Test()
+	task.spawn(function()
+		local i = 0
+		while true do
+			eachMessageType(function(messageType: MessageType)
+				i += 1
+				self:SendMessage(`Test {messageType} {i}`, messageType)
+				task.wait(1)
+			end)
+		end
+	end)
+end
+
+-- Message Methods
+function OutputConsole:Clear()
+	self._messageBuffer:Clear()
+end
+
+function OutputConsole:SendMessage(message: string, messageType: MessageType?)
+	if self._messageBuffer:Size() >= self.maxLog then
+		self._messageBuffer:PopBack()
+	end
+
+	local context: MessageContext = {
+		message = message,
+		messageType = messageType or "Log",
+		date = DateTime.now(),
+	}
+
+	self._messageBuffer:PushFront(context)
+end
+
+-- Render
+function OutputConsole:Render()
+	Iris.Window({ "Output Console" }, { isOpened = DevStates.ShowOutputConsole })
+	do
+		-- * Menu Bar
+		Iris.SeparatorText({ "Tools" })
+		Iris.SameLine()
+		do
+			-- * Clear button
+			if Iris.Button({ "Clear" }).clicked() then
+				self:Clear()
+			end
+			-- * Search
+		end
+		Iris.End()
+
+		-- * Options Field
+		Iris.SeparatorText({ "Options" })
+		Iris.SameLine()
+		do
+			Iris.Checkbox({ "Show Date" }, { isChecked = self._showDate })
+		end
+		Iris.End()
+
+		-- * Filters Field
+		Iris.CollapsingHeader({ "Filters" })
+		do
+			Iris.Table({ 4 })
+			do
+				-- * Filters toggle
+				local function toggleAll(active: boolean)
+					self:_eachFilterStates(function(fType: MessageType, state: State<boolean>)
+						state:set(active)
+					end)
+				end
+
+				local function updateAllState()
+					local allActive = true
+
+					self:_eachFilterStates(function(fType: MessageType, state: State<boolean>)
+						if not state:get() then
+							allActive = false
+						end
+					end)
+
+					if self._fullFilterState:get() ~= allActive then
+						self._fullFilterState:set(allActive)
+					end
+				end
+
+				-- * Filters "All"
+				do
+					local checkbox = Iris.Checkbox({ "All" }, { isChecked = self._filterAllState })
+					local fullState = self._fullFilterState
+					local allState = self._filterAllState
+
+					if allState:changed() and checkbox:hovered() then
+						toggleAll(allState:get())
+					end
+
+					if self._fullFilterState:changed() then
+						allState:set(fullState:get())
+					end
+				end
+
+				-- * Other filters
+				local cnt = 0
+				self:_eachFilterStates(function(fType: MessageType, state: State<boolean>)
+					cnt += 1
+					if cnt % 2 == 0 then
+						Iris.NextColumn()
+					end
+					Iris.Checkbox({ fType }, { isChecked = state })
+					if state:changed() then
+						updateAllState()
+					end
+				end)
+			end
+			Iris.End()
+		end
+		Iris.End()
+
+		-- * Output Field
+		Iris.SeparatorText({ "Output" })
+		Iris.Indent()
+		do
+			local outputs = 0
+			self._messageBuffer:Each(function(context: MessageContext)
+				if self._filterAllState:get() or self._filterStates[context.messageType]:get() then
+					Iris.SameLine()
+					do
+						if self._showDate:get() then
+							Iris.Text({
+								`[{context.date:FormatLocalTime("HH:mm:ss.SSS", LocalizationService.RobloxLocaleId)}]:`,
+							})
+						end
+						Iris.TextColored({ `{context.message}`, self.colors[context.messageType] })
+					end
+					Iris.End()
+
+					outputs += 1
+				end
+				return outputs <= self.maxOutput
+			end)
+		end
+		Iris.End()
+	end
+	Iris.End()
+end
+
+return OutputConsole.new()
+</file>
+
+<file path="src/startup/ClientStartup/DevPanel/DevStates.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Iris = require(ReplicatedStorage.Packages.Iris)
+
+local States = {
+	ShowControllerPanel = Iris.State(true),
+	ShowOutputConsole = Iris.State(false),
+}
+
+return States
+</file>
+
+<file path="src/startup/ClientStartup/DevPanel/init.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local DevControllerPanel = require(script.DevControllerPanel)
+local DevOutputConsole = require(script.DevOutputConsole)
+local DevStates = require(script.DevStates)
+local Iris = require(ReplicatedStorage.Packages.Iris)
+
+local DevPanel = {}
+
+function DevPanel:Init()
+	Iris.Init()
+	Iris:Connect(function()
+		if DevStates.ShowControllerPanel:get() then
+			DevControllerPanel:Render()
+		else
+			if Iris.Button({ "Open DevConsole" }).clicked() then
+				DevStates.ShowControllerPanel:set(true)
+			end
+			return
+		end
+
+		if DevStates.ShowOutputConsole:get() then
+			DevOutputConsole:Render()
+		end
+	end)
+
+	-- DevOutputConsole:Test()
+end
+
+return DevPanel
+</file>
+
+<file path="src/core/LoggerManager/init.luau">
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Signal = require(ReplicatedStorage.Packages.Signal)
+local Logger = require(script.Logger)
+local LoggerTypes = require(script.LoggerTypes)
+
+local LoggerManager = {}
+LoggerManager.__index = LoggerManager
+
+-- * Types
+type Signal = typeof(Signal.new())
+
+export type LogLevel = LoggerTypes.LogLevel
+export type Logger = Logger.Logger
+
+export type LoggerManagerData = {
+	_started: boolean,
+	_enabled: boolean,
+	_loggers: { [string]: Logger },
+
+	MessageOut: Signal,
+}
+export type LoggerManager = typeof(setmetatable({} :: LoggerManagerData, LoggerManager))
+
+-- * Constructor
+function LoggerManager.new(): LoggerManager
+	local self = setmetatable(
+		{
+			_started = false,
+			_enabled = false,
+			_loggers = {},
+
+			MessageOut = Signal.new(),
+		} :: LoggerManagerData,
+		LoggerManager
+	)
+
+	return self
+end
+
+-- * Private
+function LoggerManager:_dispatch(level: LogLevel, message: string)
+	self:Log(level, message)
+end
+
+-- * Public
+-- State management
+function LoggerManager:Toggle(state: boolean)
+	self._enabled = state
+end
+
+function LoggerManager:Enable()
+	self:Toggle(true)
+end
+
+function LoggerManager:Disable()
+	self:Toggle(false)
+end
+
+-- Log
+function LoggerManager:Log(level: LogLevel, message: string)
+	if not self._enabled then
+		return
+	end
+
+	if level == "Error" or level == "Warning" then
+		warn(message)
+	else
+		print(message)
+	end
+
+	if RunService:IsServer() then
+	end
+
+	self.MessageOut:Fire(message, level) --! message before level is to keep the order consistent
+end
+
+-- Lifecycle
+function LoggerManager:Init()
+	-- Check if already started
+	if self._started then
+		return
+	end
+	self._started = true
+
+	-- Initializing
+	self:Enable()
+end
+
+-- Logger Factory
+function LoggerManager:CreateLogger(scope: string?, key: string?): Logger
+	if scope and self._loggers[scope] then
+		return self._loggers[scope]
+	elseif key and self._loggers[key] then
+		return self._loggers[key]
+	end
+
+	local logger = Logger.new(function(level, message)
+		self:_dispatch(level, message)
+	end, scope)
+
+	if scope then
+		self._loggers[scope] = logger
+	elseif key then
+		self._loggers[key] = logger
+	end
+
+	return logger
+end
+
+return LoggerManager.new()
+</file>
+
+<file path="src/core/LoggerManager/Logger.luau">
+local RunService = game:GetService("RunService")
+local LoggerTypes = require(script.Parent.LoggerTypes)
+local Logger = {}
+Logger.__index = Logger
+
+--* Types
+export type LogSide = LoggerTypes.LogSide
+export type LogLevel = LoggerTypes.LogLevel
+export type LogDispatchFn = (level: LogLevel, message: string) -> ()
+export type LoggerData = {
+	_scope: string?,
+	_dispatch: LogDispatchFn,
+	_side: LogSide,
+}
+export type Logger = typeof(setmetatable({} :: LoggerData, Logger))
+
+-- * Helpers
+local function getSidePrefix(): string
+	local side = RunService:IsServer() and LoggerTypes.Sides.Server or LoggerTypes.Sides.Client
+	return string.upper(side)
+end
+
+--* Constructor
+function Logger.new(dispatchFn: LogDispatchFn, scope: string?): Logger
+	return setmetatable({
+		_dispatch = dispatchFn,
+		_side = getSidePrefix(),
+		_scope = scope,
+	}, Logger)
+end
+
+function Logger:Destroy()
+	self._manager._loggers[self._scope] = nil
+	self._manager = nil
+	table.clear(self)
+	setmetatable(self, nil)
+end
+
+--* Private
+function Logger:_format(...)
+	local header
+
+	if self._scope and self._scope ~= "" then
+		header = string.format("[%s][%s]: ", self._side, self._scope)
+	else
+		header = string.format("[%s]: ", self._side)
+	end
+
+	local parts = table.pack(...)
+	for i = 1, parts.n do
+		parts[i] = tostring(parts[i])
+	end
+
+	return header .. table.concat(parts, " ")
+end
+
+function Logger:_log(level: LogLevel, ...)
+	local message = self:_format(...)
+	self._dispatch(level, message)
+	return message
+end
+
+--* Public
+-- Format
+function Logger:Format(...)
+	return self:_format(...)
+end
+
+-- Log
+function Logger:Log(...)
+	return self:_log(LoggerTypes.Levels.Log, ...)
+end
+
+function Logger:Info(...)
+	return self:_log(LoggerTypes.Levels.Info, ...)
+end
+
+function Logger:Warn(...)
+	return self:_log(LoggerTypes.Levels.Warn, ...)
+end
+
+function Logger:Success(...)
+	return self:_log(LoggerTypes.Levels.Success, ...)
+end
+
+function Logger:Error(...)
+	return self:_log(LoggerTypes.Levels.Error, ...)
+end
+
+function Logger:Debug(...)
+	return self:_log(LoggerTypes.Levels.Debug, ...)
+end
+
+return Logger
+</file>
+
+</files>

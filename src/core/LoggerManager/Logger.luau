@@ -1,81 +1,107 @@
+local RunService = game:GetService("RunService")
+local LogSharedTypes = require(script.Parent.LogSharedTypes)
 local Logger = {}
 Logger.__index = Logger
 
 --* Types
-export type LogLevel = number
-export type Logger = {
-	_scope: string,
-	_manager: any,
-	_prefix: string,
-	_levels: { [string]: number },
+export type LogSide = LogSharedTypes.LogSide
+export type LogLevel = LogSharedTypes.LogLevel
+export type LogEntry = LogSharedTypes.LogEntry
+export type LogCategory = LogSharedTypes.LogCategory
+export type LogFn = LogSharedTypes.LogFn
+export type LogDispatchFn = (logEntry: LogEntry) -> (string, LogEntry)
+export type LoggerData = {
+	_scope: string?,
+	_dispatch: LogDispatchFn,
 
-	Debug: (self: Logger, ...any) -> string,
-	Info: (self: Logger, ...any) -> string,
-	Warn: (self: Logger, ...any) -> string,
-	Error: (self: Logger, ...any) -> string,
-	Format: (self: Logger, ...any) -> string,
+	Trace: LogFn,
+	Debug: LogFn,
+	Info: LogFn,
+	Warn: LogFn,
+	Error: LogFn,
+	Fatal: LogFn,
 }
+export type Logger = typeof(setmetatable({} :: LoggerData, Logger))
 
---* Constructor
-function Logger.new(manager: any, sidePrefix: string, scope: string?, logLevels: { [string]: number })
-	return setmetatable({
-		_scope = scope,
-		_manager = manager,
-		_prefix = sidePrefix,
-		_levels = logLevels,
-	}, Logger)
+-- * Helpers
+local function getSidePrefix(): string
+	local sidePrefix = RunService:IsServer() and LogSharedTypes.LogSides.Server or LogSharedTypes.LogSides.Client
+	return string.upper(sidePrefix)
 end
 
-function Logger:Destroy()
-	self._manager._loggers[self._scope] = nil
-	self._manager = nil
-	table.clear(self)
-	setmetatable(self, nil)
+local function convertContent(...)
+	local parts = table.pack(...)
+	for i = 1, parts.n do
+		parts[i] = tostring(parts[i] or "nil")
+	end
+	return table.concat(parts, " ")
 end
 
 --* Private
-function Logger:_format(...)
-	local header
+local function _entry(self: any, level: LogLevel, category: LogCategory?, ...): (string, LogEntry)
+	local content = convertContent(...)
+	local source = debug.info(2, "s")
+	local stack = debug.traceback(nil, 3)
 
-	if self._scope and self._scope ~= "" then
-		header = string.format("[%s][%s]: ", self._prefix, self._scope)
-	else
-		header = string.format("[%s]: ", self._prefix)
+	local logEntry: LogEntry = {
+		content = content,
+		level = level,
+		scope = self._scope,
+		category = category,
+
+		_side = self._side,
+		_timestamp = DateTime.now(),
+		_source = (level == "Trace" or level == "Debug" or level == "Error" or level == "Fatal") and source or nil,
+		_stack = (level == "Trace" or level == "Error" or level == "Fatal") and stack or nil, --? traceback here
+	}
+
+	return self._dispatch(logEntry)
+end
+
+--* Constructor
+function Logger.new(dispatchFn: LogDispatchFn, scope: string?): Logger
+	-- create log functions
+	local function isValidCategory(value: any): boolean
+		return LogSharedTypes.LogCategories[value] ~= nil
 	end
 
-	local parts = table.pack(...)
-	for i = 1, parts.n do
-		parts[i] = tostring(parts[i])
+	local function createLogFn(level: LogLevel): LogFn
+		return function(self: any, ...): (string, LogEntry)
+			local args = table.pack(...)
+			local category = nil
+
+			if args.n == 0 then
+				error("Log args is nil", 3)
+			elseif args.n >= 2 and isValidCategory(args[1]) then
+				category = args[1]
+				return _entry(self, level, category, table.unpack(args, 2, args.n))
+			end
+
+			return _entry(self, level, category, table.unpack(args, 1, args.n))
+		end
 	end
 
-	return header .. table.concat(parts, " ")
+	local loggerData = {
+		_dispatch = dispatchFn,
+		_side = getSidePrefix(),
+		_scope = scope,
+
+		Trace = createLogFn("Trace"),
+		Debug = createLogFn("Debug"),
+		Info = createLogFn("Info"),
+		Warn = createLogFn("Warn"),
+		Error = createLogFn("Error"),
+		Fatal = createLogFn("Fatal"),
+	} :: LoggerData
+
+	local self = setmetatable(loggerData, Logger)
+	return self
 end
 
-function Logger:_log(level: LogLevel, ...)
-	local message = self:_format(...)
-	self._manager:_dispatch(level, message)
-	return message
-end
-
---* Public
-function Logger:Format(...)
-	return self:_format(...)
-end
-
-function Logger:Debug(...)
-	return self:_log(self._levels.Debug, ...)
-end
-
-function Logger:Info(...)
-	return self:_log(self._levels.Info, ...)
-end
-
-function Logger:Warn(...)
-	return self:_log(self._levels.Warn, ...)
-end
-
-function Logger:Error(...)
-	return self:_log(self._levels.Error, ...)
+function Logger:Destroy()
+	self._manager = nil
+	table.clear(self)
+	setmetatable(self, nil)
 end
 
 return Logger

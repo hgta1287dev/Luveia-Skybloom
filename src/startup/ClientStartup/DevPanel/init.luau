@@ -7,19 +7,6 @@ local Iris = require(ReplicatedStorage.Packages.Iris)
 
 local DevPanel = {}
 
-local function TEST()
-	task.spawn(function()
-		local i = 0
-		while true do
-			for _, fType in ipairs(MESSAGE_FILTERS) do
-				i += 1
-				OutputConsole:SendMessage(`Test {fType} {i}`, fType)
-				task.wait(1)
-			end
-		end
-	end)
-end
-
 function DevPanel:Init()
 	Iris.Init()
 	Iris:Connect(function()
@@ -37,7 +24,7 @@ function DevPanel:Init()
 		end
 	end)
 
-	TEST()
+	-- DevOutputConsole:Test()
 end
 
 return DevPanel

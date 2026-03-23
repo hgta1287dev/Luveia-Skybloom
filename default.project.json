@@ -17,7 +17,7 @@
         "Core": {
           "$className": "Folder",
           "HoenKnit": {
-            "$path": "src/core/HoenKnit.luau"
+            "$path": "src/core/HoenKnit"
           },
           "LoggerManager": {
             "$path": "src/core/LoggerManager"
@@ -110,6 +110,12 @@
             "$className": "Folder",
             "CharacterServiceClient": {
               "$path": "src/services/CharacterService/Client.luau"
+            }
+          },
+          "DevLogService": {
+            "$className": "Folder",
+            "DevLogServiceClient": {
+              "$path": "src/services/DevLogService/Client.luau"
             }
           },
           "GameStateService": {
@@ -227,6 +233,12 @@
           "$className": "Folder",
           "CharacterServiceServer": {
             "$path": "src/services/CharacterService/Server.luau"
+          }
+        },
+        "DevLogService": {
+          "$className": "Folder",
+          "DevLogServiceServer": {
+            "$path": "src/services/DevLogService/Server.luau"
           }
         },
         "GameStateService": {

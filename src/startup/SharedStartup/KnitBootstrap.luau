@@ -1,19 +1,19 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LoggerBootstap = require(script.Parent.LoggerBootstap)
 local Knit = require(ReplicatedStorage.Packages.Knit)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
 
 local KnitBootstrap = {}
-local Logger = LoggerBootstap:GetLogger()
+local Logger = LoggerManager:CreateLogger(script.Name)
 
 function KnitBootstrap:Init()
 	task.wait(5)
-	warn(Logger:Format(`Knit Starting!`))
+	Logger:Info(`Knit Starting!`)
 	Knit.Start()
 		:andThen(function()
-			warn(Logger:Format(`Knit Started Successfully!`))
+			Logger:Info(`Knit Started Successfully!`)
 		end)
 		:catch(function(...)
-			error(Logger:Format(...))
+			Logger:Error(...)
 		end)
 		:await()
 end

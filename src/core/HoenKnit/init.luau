@@ -1,10 +1,11 @@
+local LogService = game:GetService("LogService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
 
-local HoenLogger = LoggerManager:CreateLogger("HoenKnit")
+local HoenLogger = LogService
 local HoenKnit = {}
 
 -- * Types
@@ -44,10 +45,11 @@ export type KnitService = {
 } & KnitObject
 
 -- Hoen
+type Logger = LoggerManager.Logger
 type HoenObjectState = "Created" | "Initialized" | "Started" | "Destroyed"
 type HoenObject = {
 	Name: string,
-	_logger: LoggerManager.Logger,
+	_logger: Logger,
 	_createTime: number,
 	_state: HoenObjectState,
 }
@@ -78,18 +80,15 @@ local ACTIONS = {
 	Init = "Init",
 	Start = "Start",
 }
-
 local STATES = {
 	Create = "Created",
 	Init = "Initialized",
 	Start = "Started",
 }
-
 local KEYS = {
 	Init = "KnitInit",
 	Start = "KnitStart",
 }
-
 HoenKnit.Keys = KEYS
 
 -- * Helpers
@@ -132,10 +131,9 @@ local function setupLifecycle(object: KnitObject)
 
 	-- * Init
 	function object:KnitInit()
-		print(originalInit)
 		-- Error handling
 		if self._state ~= STATES.Create then
-			logger:Warn(errInvalidState(STATES.Create, self._state))
+			logger:Error(errInvalidState(STATES.Create, self._state))
 			return
 		end
 
@@ -145,24 +143,21 @@ local function setupLifecycle(object: KnitObject)
 		-- Init
 		local st = os.clock()
 		local success, err = true, nil
-		warn(originalInit)
+
 		if typeof(originalInit) == "function" then
-			warn("PCALLLLL")
 			success, err = pcall(originalInit, self)
 		end
 
-		warn("NOTIFY")
 		if success then
 			self._state = STATES.Init
 			logger:Info(info(ACTIONS.Init, ACTION_STATES.Success, st))
 		else
-			error(logger:Format(info(ACTIONS.Init, ACTION_STATES.Failed, st), err))
+			logger:Error(info(ACTIONS.Init, ACTION_STATES.Failed, st), err)
 		end
 	end
 
 	-- * Start
 	function object:KnitStart()
-		warn(originalStart)
 		if self._state ~= STATES.Init then
 			logger:Warn(errInvalidState(STATES.Init, self._state))
 			return
@@ -202,7 +197,7 @@ end
 
 -- * Public
 -- Controller
-function HoenKnit.CreateController(def: any): HoenController
+function HoenKnit.CreateController(def: KnitControllerDef): HoenController
 	if RunService:IsServer() then
 		HoenLogger:Warn("Controllers should only be created on the Client.")
 	end
@@ -212,7 +207,7 @@ function HoenKnit.CreateController(def: any): HoenController
 end
 
 -- Service
-function HoenKnit.CreateService(def: any): HoenService
+function HoenKnit.CreateService(def: KnitServiceDef): HoenService
 	if RunService:IsClient() then
 		HoenLogger:Warn("Services should only be created on the Server.")
 	end

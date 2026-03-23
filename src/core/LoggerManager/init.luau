@@ -1,119 +1,162 @@
-local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LogSharedTypes = require(script.LogSharedTypes)
 local Logger = require(script.Logger)
+local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local LoggerManager = {}
 LoggerManager.__index = LoggerManager
 
 -- * Types
-export type LogLevelName = "Debug" | "Info" | "Warn" | "Error"
-export type LogLevel = number
-export type Handler = (level: LogLevel, message: string) -> ()
+type Signal = typeof(Signal.new())
+
+export type LogLevel = LogSharedTypes.LogLevel
+export type LogEntry = LogSharedTypes.LogEntry
 export type Logger = Logger.Logger
 
--- * Constants
-local IS_SERVER = RunService:IsServer()
-local SIDE_PREFIX = IS_SERVER and "SERVER" or "CLIENT"
+export type LoggerManagerData = {
+	_started: boolean,
+	_enabled: boolean,
+	_loggers: { [string]: Logger },
+	_buffer: { LogEntry },
 
-local LogLevels = {
-	Debug = 1,
-	Info = 2,
-	Warn = 3,
-	Error = 4,
+	MessageOut: Signal,
 }
+export type LoggerManager = typeof(setmetatable({} :: LoggerManagerData, LoggerManager))
 
 -- * Constructor
-function LoggerManager.new()
-	local self = setmetatable({}, LoggerManager)
-
-	self._started = false
-	self._enabled = true
-	self._level = LogLevels.Info
-	self._loggers = {}
-	self._handlers = {}
-	self._buffer = {}
-
-	-- default console handler
-	self:AddHandler(function(level, message)
-		if level == LogLevels.Warn then
-			warn(message)
-		elseif level == LogLevels.Error then
-			error(message, 2)
-		else
-			print(message)
-		end
-	end)
+function LoggerManager.new(): LoggerManager
+	local self = setmetatable(
+		{
+			_started = false,
+			_enabled = false,
+			_loggers = {},
+			_buffer = {},
+			MessageOut = Signal.new(),
+		} :: LoggerManagerData,
+		LoggerManager
+	)
 
 	return self
 end
 
--- * Private
-function LoggerManager:_shouldLog(level: LogLevel)
-	return self._enabled and level >= self._level
+-- * Helper
+local function format(entry: LogEntry): string
+	local side = `[{string.upper(entry._side)}]`
+	local category = entry.category and `[{string.upper(entry.category)}]` or ""
+	local scope = entry.scope and `[{entry.scope}]` or ""
+	local content = entry.content
+	local message = `{side}{category}{scope}: {content}`
+	return message
 end
 
-function LoggerManager:_dispatch(level: LogLevel, message: string)
-	if not self:_shouldLog(level) then
-		return
-	end
+-- * Private
+function LoggerManager:_dispatch(entry: LogEntry): (string, LogEntry)
+	return self:Log(entry)
+end
 
-	if not self._started then
-		table.insert(self._buffer, { level = level, message = message })
-		return
-	end
-
-	for _, handler in ipairs(self._handlers) do
-		handler(level, message)
+function LoggerManager:_output(message: string, level: LogLevel)
+	local levels = LogSharedTypes.LogLevels
+	if levels[level] >= levels.Error then
+		error(message, 3)
+	elseif level == "Warn" then
+		warn(message)
+	else
+		print(message)
 	end
 end
 
 -- * Public
-function LoggerManager:SetLevel(levelName: LogLevelName)
-	local level = LogLevels[levelName]
-	if level then
-		self._level = level
-	end
-end
-
-function LoggerManager:Enable(state: boolean)
+-- State management
+function LoggerManager:Toggle(state: boolean)
 	self._enabled = state
 end
 
-function LoggerManager:AddHandler(handler: Handler)
-	table.insert(self._handlers, handler)
+function LoggerManager:Enable()
+	self:Toggle(true)
 end
 
+function LoggerManager:Disable()
+	self:Toggle(false)
+end
+
+-- Signal
+function LoggerManager:ConnectMessageOut(fn: (message: string, entryBuffer: buffer) -> ())
+	return self.MessageOut:Connect(fn)
+end
+
+-- Serialize
+function LoggerManager:SerializeEntry(entry: LogEntry): buffer
+	local safeEntry: LogEntry & { _timestamp: number } = {
+		level = entry.level,
+		content = entry.content,
+		category = entry.category,
+		scope = entry.scope,
+		_side = entry._side,
+		_timestamp = entry._timestamp.UnixTimestampMillis,
+		_source = entry._source,
+		_stack = entry._stack,
+	}
+	return buffer.fromstring(HttpService:JSONEncode(safeEntry))
+end
+
+function LoggerManager:DeserializeEntry(entryBuffer: buffer): LogEntry
+	local json = buffer.tostring(entryBuffer)
+	local data = HttpService:JSONDecode(json)
+	data._timestamp = DateTime.fromUnixTimestampMillis(data._timestamp)
+	return data
+end
+
+-- Log
+function LoggerManager:Log(entry: LogEntry): (string, LogEntry)
+	local message = format(entry)
+
+	if not self._enabled then
+		table.insert(self._buffer, entry)
+		return message, entry
+	end
+
+	self:_output(message, entry.level)
+
+	local bufferEntry = self:SerializeEntry(entry)
+	self.MessageOut:Fire(message, bufferEntry)
+
+	return message, entry
+end
+
+-- Lifecycle
 function LoggerManager:Init()
+	-- Check if already started
 	if self._started then
 		return
 	end
-
 	self._started = true
 
-	for _, entry in ipairs(self._buffer) do
-		if self:_shouldLog(entry.level) then
-			for _, handler in ipairs(self._handlers) do
-				handler(entry.level, entry.message)
-			end
-		end
-	end
+	-- Initializing
+	self:Enable()
 
-	table.clear(self._buffer)
+	-- buffer flush
+	for _, entry in ipairs(self._buffer) do
+		self:Log(entry)
+	end
 end
 
 -- Logger Factory
-function LoggerManager:CreateLogger(scope: string?): Logger
-	if scope and self._loggers[scope] then
-		return self._loggers[scope]
+function LoggerManager:CreateLogger(scope: string?, key: string?): Logger
+	local id = scope or key
+
+	if id and self._loggers[id] then
+		return self._loggers[id]
 	end
 
-	local logger = Logger.new(self, SIDE_PREFIX, scope, LogLevels)
+	local logger = Logger.new(function(logEntry: LogSharedTypes.LogEntry): (string, LogEntry)
+		return self:_dispatch(logEntry)
+	end, scope)
 
-	if not scope then
-		logger._isTemporary = true
-		return logger
+	if id then
+		self._loggers[id] = logger
 	end
 
-	self._loggers[scope] = logger
 	return logger
 end
 
