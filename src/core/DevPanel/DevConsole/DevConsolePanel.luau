@@ -51,15 +51,15 @@ function OutputConsole:Render()
 		do
 			Iris.Table({ 5 })
 			do
-				Iris.Checkbox({ "Show Date" }, { isChecked = DevConsoleStates.ShowDate })
+				Iris.Checkbox({ "Show Date" }, { isChecked = DevConsoleStates.DisplayStates.ShowDate })
 				Iris.NextColumn()
-				Iris.Checkbox({ "Show Run Side" }, { isChecked = DevConsoleStates.ShowRunSide })
+				Iris.Checkbox({ "Show Run Side" }, { isChecked = DevConsoleStates.DisplayStates.ShowRunSide })
 				Iris.NextColumn()
-				Iris.Checkbox({ "Show Run Scope" }, { isChecked = DevConsoleStates.ShowRunScope })
+				Iris.Checkbox({ "Show Run Scope" }, { isChecked = DevConsoleStates.DisplayStates.ShowRunScope })
 				Iris.NextColumn()
-				Iris.Checkbox({ "Show Category" }, { isChecked = DevConsoleStates.ShowCategory })
+				Iris.Checkbox({ "Show Category" }, { isChecked = DevConsoleStates.DisplayStates.ShowCategory })
 				Iris.NextColumn()
-				Iris.Checkbox({ "Show Run Content" }, { isChecked = DevConsoleStates.ShowRunContent })
+				Iris.Checkbox({ "Show Run Content" }, { isChecked = DevConsoleStates.DisplayStates.ShowRunContent })
 			end
 			Iris.End()
 		end
