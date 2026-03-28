@@ -17,7 +17,7 @@ type FilterManager = DevFilterManager.StateManager
 
 -- * Constants
 local MAX_LOGS = 300
-local MAX_OUTPUT = 10
+local MAX_OUTPUT = 50
 
 -- * Constructor
 local DevConsole = {
@@ -34,9 +34,9 @@ end
 
 -- Update
 function DevConsole:_addToEntries(entry: LogEntry)
-	self.entries:PushFront(entry)
+	self.entries:PushBack(entry)
 	if self.entries:Size() > MAX_LOGS then
-		self.entries:PopBack()
+		self.entries:PushFront()
 	end
 end
 

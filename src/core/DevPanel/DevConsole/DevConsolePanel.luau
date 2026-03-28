@@ -16,13 +16,18 @@ export type LogLevel = LogSharedTypes.LogLevel
 export type LogEntry = LogSharedTypes.LogEntry
 
 -- * Default Config
-local COLORS: { [LogLevel]: Color3 } = {
+local LEVEL_COLORS = {
 	Trace = Color3.fromRGB(75, 20, 255),
 	Debug = Color3.fromRGB(100, 180, 255),
 	Info = Color3.fromRGB(255, 255, 255),
 	Warn = Color3.fromRGB(255, 160, 0),
 	Error = Color3.fromRGB(255, 50, 50),
 	Fatal = Color3.fromRGB(200, 0, 0),
+}
+
+local SIDE_COLORS = {
+	Server = LEVEL_COLORS.Warn,
+	Client = LEVEL_COLORS.Debug,
 }
 
 -- * API
@@ -44,13 +49,15 @@ function OutputConsole:Render()
 		-- * Options Field
 		Iris.CollapsingHeader({ "Display Settings" })
 		do
-			Iris.Table({ 4 })
+			Iris.Table({ 5 })
 			do
 				Iris.Checkbox({ "Show Date" }, { isChecked = DevConsoleStates.ShowDate })
 				Iris.NextColumn()
 				Iris.Checkbox({ "Show Run Side" }, { isChecked = DevConsoleStates.ShowRunSide })
 				Iris.NextColumn()
 				Iris.Checkbox({ "Show Run Scope" }, { isChecked = DevConsoleStates.ShowRunScope })
+				Iris.NextColumn()
+				Iris.Checkbox({ "Show Category" }, { isChecked = DevConsoleStates.ShowCategory })
 				Iris.NextColumn()
 				Iris.Checkbox({ "Show Run Content" }, { isChecked = DevConsoleStates.ShowRunContent })
 			end
@@ -109,23 +116,34 @@ function OutputConsole:Render()
 			DevConsole:EachEntry(function(entry: LogEntry)
 				Iris.SameLine(5, nil, Enum.HorizontalAlignment.Left)
 				do
-					if DevConsoleStates.ShowDate:get() then
-						Iris.Text({ entry._timestamp:format("0000.2f") })
+					if DevConsoleStates.DisplayStates.ShowDate:get() then
+						Iris.Separator()
+						Iris.Text({ string.format("%07.3f", entry._timestamp) })
 						Iris.Separator()
 					end
 
-					if DevConsoleStates.ShowRunSide:get() then
-						Iris.Text({ string.upper(entry._side) })
+					if DevConsoleStates.DisplayStates.ShowRunSide:get() then
+						Iris.Separator()
+						Iris.TextColored({ string.upper(entry._side), SIDE_COLORS[entry._side] })
 						Iris.Separator()
 					end
 
-					if DevConsoleStates.ShowRunScope:get() then
+					if DevConsoleStates.DisplayStates.ShowRunScope:get() then
+						Iris.Separator()
 						Iris.Text({ entry.scope })
 						Iris.Separator()
 					end
 
-					if DevConsoleStates.ShowRunContent:get() then
-						Iris.TextColored({ entry.content, COLORS[entry.level] })
+					if DevConsoleStates.DisplayStates.ShowCategory:get() then
+						Iris.Separator()
+						Iris.Text({ entry.category })
+						Iris.Separator()
+					end
+
+					if DevConsoleStates.DisplayStates.ShowRunContent:get() then
+						Iris.Separator()
+						Iris.TextColored({ entry.content, LEVEL_COLORS[entry.level] })
+						Iris.Separator()
 					end
 				end
 				Iris.End()

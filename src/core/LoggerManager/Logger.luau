@@ -13,6 +13,7 @@ export type LogDispatchFn = (logEntry: LogEntry) -> (string, LogEntry)
 export type LoggerData = {
 	_scope: string?,
 	_dispatch: LogDispatchFn,
+	_defaultCategory: LogCategory?,
 
 	Trace: LogFn,
 	Debug: LogFn,
@@ -54,7 +55,7 @@ local function _entry(self: any, level: LogLevel, category: LogCategory?, ...): 
 		category = convertCategory(category),
 
 		_side = self._side,
-		_timestamp = tostring(os.clock()),
+		_timestamp = os.clock(),
 		_source = (level == "Trace" or level == "Debug" or level == "Error" or level == "Fatal") and source or nil,
 		_stack = (level == "Trace" or level == "Error" or level == "Fatal") and stack or nil, --? traceback here
 	}
@@ -63,16 +64,16 @@ local function _entry(self: any, level: LogLevel, category: LogCategory?, ...): 
 end
 
 --* Constructor
-function Logger.new(dispatchFn: LogDispatchFn, scope: string?): Logger
+function Logger.new(dispatchFn: LogDispatchFn, scope: string?, defaultCategory: LogCategory?): Logger
 	-- create log functions
 	local function isValidCategory(value: any): boolean
 		return LogSharedTypes.LogCategories[value] ~= nil
 	end
 
 	local function createLogFn(level: LogLevel): LogFn
-		return function(self: any, ...): (string, LogEntry)
+		return function(self: Logger, ...): (string, LogEntry)
 			local args = table.pack(...)
-			local category = nil
+			local category = self._defaultCategory
 
 			if args.n == 0 then
 				error("Log args is nil", 3)
@@ -89,6 +90,7 @@ function Logger.new(dispatchFn: LogDispatchFn, scope: string?): Logger
 		_dispatch = dispatchFn,
 		_side = getSidePrefix(),
 		_scope = scope,
+		_defaultCategory = defaultCategory,
 
 		Trace = createLogFn("Trace"),
 		Debug = createLogFn("Debug"),

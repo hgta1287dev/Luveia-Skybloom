@@ -1,11 +1,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
 local GameTypes = require(ReplicatedStorage.Shared.Types.GameTypes)
-local Logger = require(ReplicatedStorage.Shared.Utils.Logger)
 local MapContainer = require(script.Parent.MapContainer)
 
 local MapFactory = {}
+local Logger = LoggerManager:CreateLogger(script.Name)
 
 -- * Types
 export type Mode = GameTypes.Mode
@@ -14,7 +15,7 @@ export type Mode = GameTypes.Mode
 -- * Public
 function MapFactory.GetMapTemplate(mode: Mode, mapName: string, timeout: number): (Instance?, string?)
 	if not RunService:IsServer() then
-		Logger.warn("MapFactory", "Cannot get map template on client")
+		Logger:Warn("Gameplay", "MapFactory", "Cannot get map template on client")
 		return nil, "Cannot get map template on client"
 	end
 
@@ -112,7 +113,7 @@ end
 
 function MapFactory.CreateMap(mode: Mode, mapName: string, timeout: number): (Instance?, string?)
 	if not RunService:IsServer() then
-		Logger.warn("MapFactory", "Cannot create map on client")
+		Logger:Warn("Gameplay", "MapFactory", "Cannot create map on client")
 		return nil, "Cannot create map on client"
 	end
 

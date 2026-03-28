@@ -24,7 +24,7 @@ export type LogEntry = {
 	_side: LogSide,
 	_source: string?,
 	_stack: string?,
-	_timestamp: string,
+	_timestamp: number,
 }
 
 export type LogFn = (self: any, categoryOrContent: LogCategory? | string, ...any) -> (string, LogEntry)

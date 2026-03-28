@@ -182,6 +182,9 @@
             "$className": "Folder",
             "TestServiceClient": {
               "$path": "src/services/TestService/Client.luau"
+            },
+            "TestMap": {
+              "$path": "src/services/TestService/TestMap.luau"
             }
           },
           "WindService": {

@@ -109,11 +109,13 @@ function MapService:CreateMap(mode: Mode, mapName: string, timeout: number?)
 	end
 
 	-- Load map
+	Logger:Info("Gameplay", "Creating New Map!")
+
 	local oldMap = self.CurrentMap
 	local newMap, err = MapFactory.CreateMap(mode :: Mode, mapName, timeout or LOAD_MAP_TIMEOUT)
 
 	if not newMap then
-		Logger:Error(err)
+		Logger:Error("Gameplay", `Failed to load map "{mapName}": {err}`)
 		return
 	end
 
@@ -137,10 +139,12 @@ function MapService:CreateMap(mode: Mode, mapName: string, timeout: number?)
 	self.MapUpdated:Fire(mapName, transitionId)
 	self.Client.MapUpdated:FireAll(mapName, transitionId)
 
+	Logger:Info("Gameplay", "Map Created!")
+
 	-- Timeout fallback
 	task.delay(TRANISTION_TIMEOUT, function()
 		if transitionId == self._currentTransitionId then
-			Logger:Warn(`Transition timeout. Forcing complete.`)
+			Logger:Warn("Gameplay", `Transition timeout. Forcing complete.`)
 			self:_completeTransition(transitionId)
 		end
 	end)

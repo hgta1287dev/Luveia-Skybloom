@@ -133,12 +133,12 @@ local function setupLifecycle(object: KnitObject)
 	function object:KnitInit()
 		-- Error handling
 		if self._state ~= STATES.Create then
-			logger:Error(errInvalidState(STATES.Create, self._state))
+			logger:Error("System", errInvalidState(STATES.Create, self._state), "System")
 			return
 		end
 
 		-- Notify
-		logger:Info(info(ACTIONS.Init, ACTION_STATES.Started))
+		logger:Info("System", info(ACTIONS.Init, ACTION_STATES.Started))
 
 		-- Init
 		local st = os.clock()
@@ -150,21 +150,21 @@ local function setupLifecycle(object: KnitObject)
 
 		if success then
 			self._state = STATES.Init
-			logger:Info(info(ACTIONS.Init, ACTION_STATES.Success, st))
+			logger:Info("System", info(ACTIONS.Init, ACTION_STATES.Success, st))
 		else
-			logger:Error(info(ACTIONS.Init, ACTION_STATES.Failed, st), err)
+			logger:Error("System", info(ACTIONS.Init, ACTION_STATES.Failed, st), err)
 		end
 	end
 
 	-- * Start
 	function object:KnitStart()
 		if self._state ~= STATES.Init then
-			logger:Warn(errInvalidState(STATES.Init, self._state))
+			logger:Warn("System", errInvalidState(STATES.Init, self._state))
 			return
 		end
 
 		-- Log Start
-		logger:Info(info(ACTIONS.Start, ACTION_STATES.Started))
+		logger:Info("System", info(ACTIONS.Start, ACTION_STATES.Started))
 
 		-- Start
 		local st = os.clock()
@@ -175,9 +175,9 @@ local function setupLifecycle(object: KnitObject)
 
 		if success then
 			self._state = STATES.Start
-			logger:Info(info(ACTIONS.Start, ACTION_STATES.Success, st))
+			logger:Info("System", info(ACTIONS.Start, ACTION_STATES.Success, st))
 		else
-			error(logger:Format(info(ACTIONS.Start, ACTION_STATES.Failed, st), err))
+			logger:Error("System", info(ACTIONS.Start, ACTION_STATES.Failed, st), err)
 		end
 	end
 

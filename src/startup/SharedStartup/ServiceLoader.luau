@@ -3,13 +3,13 @@ local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
 
-local Logger = LoggerManager:CreateLogger(script.Name)
+local Logger = LoggerManager:CreateLogger(script.Name, "System")
 
 --  * Config
-local SERVICES = {
+local SHARED = {
 	"DevLogService",
 	-- "CameraProxyService",
-	-- "MapService",
+	"MapService",
 	-- "CameraService", --! Have problems with this one
 	-- "WindService",
 	"TestService",
@@ -17,10 +17,21 @@ local SERVICES = {
 	-- "CharacterService",
 }
 
-local CONTROLLERS = {
+local SERVICES = {
 	"DevLogService",
-	-- "LightingService",
-	"TestService",
+	-- "CameraProxyService",
+	"MapService",
+	-- "WindService",
+	-- "TestService",
+	-- "RoomService",
+	-- "CharacterService",
+}
+
+local CONTROLLERS = {
+	"MapService",
+	"DevLogService",
+	"LightingService",
+	-- "TestService",
 }
 
 -- * Loader
@@ -29,27 +40,49 @@ local ServiceLoader = {
 	services = {},
 }
 
+-- * Helpers
+local function LoadService(name)
+	local serviceFolder = ServerScriptService.Services:FindFirstChild(name)
+	local server = serviceFolder and serviceFolder:FindFirstChild(`{name}Server`)
+	if not serviceFolder then
+		Logger:Warn(`There is no Service name {name}`)
+		return
+	end
+	ServiceLoader.services[name] = require(server)
+	Logger:Info(`Loaded service: {name}`)
+end
+
+local function LoadController(name)
+	local serviceFolder = ReplicatedStorage.Shared.Services:FindFirstChild(name)
+	local client = serviceFolder and serviceFolder:FindFirstChild(`{name}Client`)
+	if not client then
+		Logger:Warn(`There is no Controller name {name}`)
+		return
+	end
+	ServiceLoader.controllers[name] = require(client)
+	Logger:Info(`Loaded controller: {name}`)
+end
+
 function ServiceLoader:Init()
-	Logger:Info("Initialization Started!")
+	Logger:Info("System", "Initialization Started!")
 	if RunService:IsServer() then
-		for _, name in SERVICES do
-			local serviceFolder = ServerScriptService.Services:WaitForChild(name)
-			local server = serviceFolder and serviceFolder:WaitForChild(`{name}Server`)
-			if serviceFolder then
-				ServiceLoader.services[name] = require(server)
-				Logger:Info(`Loaded service: {name}`)
-			end
+		for _, name in ipairs(SERVICES) do
+			LoadService(name)
 		end
 	else
-		for _, name in CONTROLLERS do
-			local serviceFolder = ReplicatedStorage.Shared.Services:WaitForChild(name)
-			local client = serviceFolder and serviceFolder:WaitForChild(`{name}Client`)
-			if client then
-				ServiceLoader.controllers[name] = require(client)
-				Logger:Info(`Loaded controller: {name}`)
-			end
+		for _, name in ipairs(CONTROLLERS) do
+			LoadController(name)
 		end
 	end
+
+	for _, name in ipairs(SHARED) do
+		if not ServiceLoader.services[name] and RunService:IsServer() then
+			LoadService(name)
+		elseif not ServiceLoader.controllers[name] and RunService:IsClient() then
+			LoadController(name)
+		end
+	end
+
 	Logger:Info("Initialization Completed!")
 end
 

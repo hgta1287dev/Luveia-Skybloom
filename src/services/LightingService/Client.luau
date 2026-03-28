@@ -19,14 +19,9 @@ function LightingController:SetPreset(name: string)
 end
 
 -- * Knit API
-function LightingController:KnitInit()
-	warn("INITINGGG")
-end
+function LightingController:KnitInit() end
 function LightingController:KnitStart()
-	warn("STARTTT")
-	task.wait(3)
 	LightingManager:Apply(LightingPresets.Default)
-	warn("LIGHTING APPLIEDD")
 end
 
 return LightingController

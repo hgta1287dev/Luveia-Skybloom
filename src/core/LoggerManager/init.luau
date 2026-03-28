@@ -11,6 +11,7 @@ LoggerManager.__index = LoggerManager
 type Signal = typeof(Signal.new())
 
 export type LogLevel = LogSharedTypes.LogLevel
+export type LogCategory = LogSharedTypes.LogCategory
 export type LogEntry = LogSharedTypes.LogEntry
 export type Logger = Logger.Logger
 
@@ -143,7 +144,7 @@ function LoggerManager:Init()
 end
 
 -- Logger Factory
-function LoggerManager:CreateLogger(scope: string?, key: string?): Logger
+function LoggerManager:CreateLogger(scope: string?, defaultCategory: LogCategory?, key: string?): Logger
 	local id = scope or key
 
 	if id and self._loggers[id] then
@@ -152,7 +153,7 @@ function LoggerManager:CreateLogger(scope: string?, key: string?): Logger
 
 	local logger = Logger.new(function(logEntry: LogEntry): (string, LogEntry)
 		return self:_dispatch(logEntry)
-	end, scope)
+	end, scope, defaultCategory)
 
 	if id then
 		self._loggers[id] = logger

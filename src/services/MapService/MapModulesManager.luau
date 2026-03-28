@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Logger = require(ReplicatedStorage.Shared.Utils.Logger)
+local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
+local Logger = LoggerManager:CreateLogger(script.Name)
 local MapModulesManager = {}
 MapModulesManager.__index = MapModulesManager
 
@@ -32,7 +33,7 @@ end
 local function run(callback)
 	local ok, result = pcall(callback)
 	if not ok then
-		Logger.error("MapModulesManager", result)
+		Logger:Error("Gameplay", "MapModulesManager", result)
 	end
 end
 

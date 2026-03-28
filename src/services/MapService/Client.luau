@@ -21,13 +21,13 @@ local LOADMAPTIMEOUT = 5
 function MapController:_getMap(mapName: string)
 	local mapsFolder = MapContainer.GetContainer()
 	if not mapsFolder then
-		self._logger:Warn("Maps folder not found!")
+		self._logger:Warn("Gameplay", "Maps folder not found!")
 		return nil
 	end
 
 	local map = mapsFolder:WaitForChild(mapName, LOADMAPTIMEOUT)
 	if not map then
-		self._logger:Warn(`Map not found: "{mapName}"`)
+		self._logger:Warn("Gameplay", `Map not found: "{mapName}"`)
 		return nil
 	end
 
@@ -78,10 +78,10 @@ function MapController:KnitStart()
 			if mapName then
 				self:_applyMap(mapName, transitionId)
 			end
-			self._logger:Info(`Init map {mapName} successfully!`)
+			self._logger:Info("Gameplay", `Init map {mapName} successfully!`)
 		end)
 		:catch(function(err)
-			self._logger:Error("Init map error!:", err)
+			self._logger:Error("Gameplay", "Init map error!:", err)
 		end)
 
 	-- * Connections
@@ -92,10 +92,10 @@ function MapController:KnitStart()
 	self.TransitionReady:Connect(function(transitionId: number)
 		MapService:TransitionFinished(transitionId)
 			:andThen(function()
-				self._logger:Info(`Send transition finished successfully!`)
+				self._logger:Info("Gameplay", `Send transition finished successfully!`)
 			end)
 			:catch(function(err)
-				self._logger:Error("Send transition finished error!:", err)
+				self._logger:Error("Gameplay", "Send transition finished error!:", err)
 			end)
 	end)
 end
