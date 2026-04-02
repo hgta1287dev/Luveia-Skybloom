@@ -31,12 +31,16 @@ function OrbitVCam.new()
 	local offsetModule = CameraOffsetModule.new()
 	local objectTargetModule = CameraTargetObjectModule.new(nil, GetTestPart())
 
+	orbitModule.Distance.SmoothFactor = 6
+	orbitModule.Yaw.SmoothFactor = 4
+	orbitModule.Pitch.SmoothFactor = 5
+
 	local self = setmetatable(
 		BaseVirtualCamera.new({
 			objectTargetModule,
 			orbitModule,
 			lookAtModule,
-			-- offsetModule,
+			offsetModule,
 		}),
 		OrbitVCam
 	)
@@ -44,10 +48,11 @@ function OrbitVCam.new()
 	function self:_updateOrbitInput(context: CameraContext)
 		local input = context.InputState
 		local mouseState = input.MouseState
+
+		orbitModule.Distance:AdjustTarget(mouseState.ScrollDelta)
 		if mouseState.ButtonsDown:Has(Enum.UserInputType.MouseButton2) then
 			orbitModule.Yaw:AdjustTarget(mouseState.MoveDelta.X)
 			orbitModule.Pitch:AdjustTarget(mouseState.MoveDelta.Y)
-			orbitModule.Distance:AdjustTarget(mouseState.ScrollDelta)
 		end
 	end
 
