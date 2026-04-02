@@ -3,45 +3,40 @@ local UserInputService = game:GetService("UserInputService")
 local TouchInput = {}
 TouchInput.__index = TouchInput
 
+export type TouchState = {
+	Delta: Vector2,
+	Pinch: number,
+}
 export type TouchInput = typeof(setmetatable(
 	{} :: {
-		Delta: Vector2,
-		Zoom: number,
+		TouchState: TouchState,
 	},
 	TouchInput
 ))
 
-function TouchInput.new(): TouchInput
+function TouchInput.new(touchState: TouchState): TouchInput
 	local self = setmetatable({
-		Delta = Vector2.zero,
-		Zoom = 0,
+		TouchState = touchState,
 	}, TouchInput)
-
-	local lastPos = nil
-	-- local lastDistance = nil
-
-	UserInputService.TouchMoved:Connect(function(touch)
-		if lastPos then
-			local delta = touch.Position - lastPos
-			self.Delta = Vector2.new(delta.X, delta.Y)
-		end
-		lastPos = touch.Position
-	end)
-
-	-- pinch zoom
-	UserInputService.TouchPinch:Connect(function(pinches)
-		self.Zoom = pinches.Position.Z
-	end)
 
 	return self
 end
 
-function TouchInput:GetDelta()
-	local delta = self.Delta
-	local zoom = self.Zoom
-	self.Delta = Vector2.zero
-	self.Zoom = 0
-	return delta, zoom
+function TouchInput:Init()
+	local state: TouchState = self.TouchState
+	local lastPos = nil
+	UserInputService.TouchMoved:Connect(function(touch)
+		if lastPos then
+			local delta = touch.Position - lastPos
+			state.Delta.X = delta.X
+			state.Delta.Y = delta.Y
+		end
+		lastPos = touch.Position
+	end)
+
+	UserInputService.TouchPinch:Connect(function(pinches)
+		state.Pinch = pinches.Position.Z
+	end)
 end
 
 return TouchInput
