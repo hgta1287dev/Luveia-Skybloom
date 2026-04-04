@@ -21,11 +21,32 @@ function Mouse.new()
 	self._lastPosition = UserInputService:GetMouseLocation()
 
 	self._isLocked = false
+	self._buttons = {}
 
 	-- accumulate scroll
 	UserInputService.InputChanged:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseWheel then
 			self._scrollDelta += input.Position.Z
+		end
+	end)
+
+	UserInputService.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			self._buttons[Enum.UserInputType.MouseButton1] = true
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+			self._buttons[Enum.UserInputType.MouseButton2] = true
+		elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+			self._buttons[Enum.UserInputType.MouseButton3] = true
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			self._buttons[Enum.UserInputType.MouseButton1] = false
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+			self._buttons[Enum.UserInputType.MouseButton2] = false
+		elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+			self._buttons[Enum.UserInputType.MouseButton3] = false
 		end
 	end)
 
@@ -88,6 +109,10 @@ function Mouse:SetLocked(locked: boolean)
 		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 		UserInputService.MouseIconEnabled = true
 	end
+end
+
+function Mouse:IsButtonPressed(button: Enum.UserInputType): boolean
+	return self._buttons[button]
 end
 
 return Mouse

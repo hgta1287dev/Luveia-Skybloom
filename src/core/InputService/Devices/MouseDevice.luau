@@ -44,4 +44,8 @@ function MouseDevice:GetScrollDelta(): number
 	return self._mouseInput:GetScrollDelta()
 end
 
+function MouseDevice:IsButtonDown(button: Enum.UserInputType): boolean
+	return self._mouseInput:IsButtonPressed(button)
+end
+
 return MouseDevice

@@ -45,22 +45,43 @@ function OrbitVCam.new()
 	)
 
 	self.direction = Vector2.zero
+	self.zoomDis = 0
 
 	local mapper = InputService:GetActionMapper()
-	local lookAction: InputAction = mapper:GetAction("Gameplay", "Look")
-	local zoomDistanceAction: InputAction = mapper:GetAction("Gameplay", "ZoomDistance")
+	local mouseDevice = InputService:GetMouseDevice()
 
-	lookAction.StateChanged:Connect(function(direction: Vector2)
-		self.direction = direction * Vector2.new(1, -1)
+	local look: InputAction = mapper:GetAction("Gameplay", "Look")
+	local lookDelta: InputAction = mapper:GetAction("Gameplay", "LookDelta")
+	local zoomDis: InputAction = mapper:GetAction("Gameplay", "ZoomDistance")
+	local zoomDisDelta: InputAction = mapper:GetAction("Gameplay", "ZoomDistanceDelta")
+
+	lookDelta.StateChanged:Connect(function(delta: Vector2)
+		orbitModule.Yaw:AdjustTarget(delta.X)
+		orbitModule.Pitch:AdjustTarget(delta.Y)
 	end)
 
-	zoomDistanceAction.StateChanged:Connect(function(distance: number)
+	zoomDisDelta.StateChanged:Connect(function(distance: number)
 		orbitModule.Distance:AdjustTarget(-distance)
 	end)
 
+	look.StateChanged:Connect(function(direction: Vector2)
+		self.direction = direction * Vector2.new(1, -1)
+	end)
+
+	zoomDis.StateChanged:Connect(function(distance: number)
+		self.zoomDis = distance
+	end)
+
 	function self:_onUpdate()
+		if mouseDevice:IsButtonDown(Enum.UserInputType.MouseButton2) then
+			local delta = -mouseDevice:GetMoveDelta()
+			orbitModule.Yaw:AdjustTarget(delta.X)
+			orbitModule.Pitch:AdjustTarget(delta.Y)
+		end
+
 		orbitModule.Yaw:AdjustTarget(self.direction.X)
 		orbitModule.Pitch:AdjustTarget(self.direction.Y)
+		orbitModule.Distance:AdjustTarget(-self.zoomDis)
 	end
 
 	return self

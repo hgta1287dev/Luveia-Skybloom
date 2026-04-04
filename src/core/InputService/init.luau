@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Signal = require(ReplicatedStorage.Packages.Signal)
@@ -16,7 +17,7 @@ local RENDER_PRIORITY = Enum.RenderPriority.Input.Value
 -- * Helpers
 local function getConfig()
 	local config = {
-		Parent = ReplicatedStorage,
+		Parent = Players.LocalPlayer.PlayerScripts,
 		ContainerName = "Inputs",
 		Contexts = InputConfig.new(),
 	}

@@ -11,18 +11,24 @@ function InputConfig.new(): { [string]: InputMapperTypes.ContextConfig }
 					Type = Enum.InputActionType.Direction2D,
 					Bindings = {
 						Keyboard = {
+							Vector2Scale = Vector2.new(2, 2),
 							Up = Enum.KeyCode.W,
 							Down = Enum.KeyCode.S,
 							Left = Enum.KeyCode.A,
 							Right = Enum.KeyCode.D,
 						},
+					},
+				},
+
+				LookDelta = {
+					Type = Enum.InputActionType.Direction2D,
+					Bindings = {
 						Mouse = {
-							Vector2Scale = Vector2.new(0.1, 0.1),
 							KeyCode = Enum.KeyCode.MouseDelta,
-							PrimaryModifier = Enum.KeyCode.MouseRightButton,
 						},
 					},
 				},
+
 				Move = {
 					Type = Enum.InputActionType.Direction3D,
 					Bindings = {
@@ -36,13 +42,21 @@ function InputConfig.new(): { [string]: InputMapperTypes.ContextConfig }
 						},
 					},
 				},
+
 				ZoomDistance = {
 					Type = Enum.InputActionType.Direction1D,
 					Bindings = {
 						Keyboard = {
+							Vector2Scale = Vector2.new(0.001, 0.001),
 							Up = Enum.KeyCode.I,
 							Down = Enum.KeyCode.O,
 						},
+					},
+				},
+
+				ZoomDistanceDelta = {
+					Type = Enum.InputActionType.Direction1D,
+					Bindings = {
 						Mouse = {
 							Scale = 0.05,
 							KeyCode = Enum.KeyCode.MouseWheel,
