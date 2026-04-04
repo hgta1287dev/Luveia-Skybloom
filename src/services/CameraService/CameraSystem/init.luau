@@ -1,11 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local CameraInput = require(script.CineCam.Input.CameraInput)
-local OrbitVCam = require(script.CineCam.VirtualCameras.OrbitVCam)
-local CameraBrain = require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Core.CameraBrain)
-local CameraContext =
-	require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Context.CameraContext)
-
+local CameraContext = require(ReplicatedStorage.Shared.Core.CineCam.Context.CameraContext)
+local CameraBrain = require(ReplicatedStorage.Shared.Core.CineCam.Core.CameraBrain)
+local OrbitVCam = require(ReplicatedStorage.Shared.Core.CineCam.VirtualCameras.OrbitVCam)
 local CameraSystem = {}
 CameraSystem.__index = CameraSystem
 
@@ -18,7 +15,6 @@ function CameraSystem.new()
 	local self = setmetatable({
 		brain = CameraBrain.new(),
 		context = context,
-		input = CameraInput.new(context.InputState),
 	}, CameraSystem)
 
 	return self
@@ -27,10 +23,7 @@ end
 function CameraSystem:Update(dt: number)
 	dt = math.min(dt, MAX_DELTA_TIME)
 	self.context.DeltaTime = dt
-
-	self.input:Update(dt)
 	self.brain:Update(self.context)
-	self.input:Flush()
 end
 
 function CameraSystem:Init()

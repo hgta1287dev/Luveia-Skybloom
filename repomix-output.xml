@@ -32,7 +32,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: src/services/CameraService/CameraSystem
+- Only files matching these patterns are included: src/core/InputService/Action/InputMapper
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
 - Files are sorted by Git change count (files with more changes are at the bottom)
@@ -41,1031 +41,985 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
-src/services/CameraService/CameraSystem/CineCam/_note.luau
-src/services/CameraService/CameraSystem/CineCam/Config/CameraTypes.luau
-src/services/CameraService/CameraSystem/CineCam/Context/CameraContext.luau
-src/services/CameraService/CameraSystem/CineCam/Context/CameraInputState.luau
-src/services/CameraService/CameraSystem/CineCam/Context/CameraState.luau
-src/services/CameraService/CameraSystem/CineCam/Core/CameraBrain.luau
-src/services/CameraService/CameraSystem/CineCam/Input/CameraGamepadInput.luau
-src/services/CameraService/CameraSystem/CineCam/Input/CameraInput.luau
-src/services/CameraService/CameraSystem/CineCam/Input/CameraKeyboardInput.luau
-src/services/CameraService/CameraSystem/CineCam/Input/CameraMouseInput.luau
-src/services/CameraService/CameraSystem/CineCam/Input/CameraTouchInput.luau
-src/services/CameraService/CameraSystem/CineCam/Output/CameraOutput.luau
-src/services/CameraService/CameraSystem/CineCam/Output/CameraResult.luau
-src/services/CameraService/CameraSystem/CineCam/Pipe/Modules/Aim/CameraLookAtModule.luau
-src/services/CameraService/CameraSystem/CineCam/Pipe/Modules/Body/CameraFollowModule.luau
-src/services/CameraService/CameraSystem/CineCam/Pipe/Modules/Body/CameraOrbitModule.luau
-src/services/CameraService/CameraSystem/CineCam/Pipe/Modules/Extensions/CameraTargetObjectModule.luau
-src/services/CameraService/CameraSystem/CineCam/Pipe/Modules/Noise/CameraOffsetModule.luau
-src/services/CameraService/CameraSystem/CineCam/Pipe/Pipeline.luau
-src/services/CameraService/CameraSystem/CineCam/Utilities/CameraAxisState.luau
-src/services/CameraService/CameraSystem/CineCam/Utilities/CameraUtils.luau
-src/services/CameraService/CameraSystem/CineCam/VirtualCameras/BaseVCam.luau
-src/services/CameraService/CameraSystem/CineCam/VirtualCameras/OrbitVCam.luau
-src/services/CameraService/CameraSystem/init.luau
+src/core/InputService/Action/InputMapper/init.luau
+src/core/InputService/Action/InputMapper/InputMapperAction.luau
+src/core/InputService/Action/InputMapper/InputMapperBinding.luau
+src/core/InputService/Action/InputMapper/InputMapperContext.luau
+src/core/InputService/Action/InputMapper/InputMapperTypes.luau
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
 
-<file path="src/services/CameraService/CameraSystem/CineCam/_note.luau">
---[[
-
-Cinemachine/
-├─ Core/
-│   ├─ CinemachineBrain.cs            # Brain duy nhất, apply view xuống Camera thật
-│   ├─ CinemachineCore.cs             # Hệ thống trung tâm tracking cameras
-│   └─ CinemachineVirtualCameraBase.cs # Base class các virtual camera
-│
-├─ VirtualCameras/
-│   ├─ CinemachineVirtualCamera.cs     # Virtual Camera chính
-│   ├─ CinemachineFreeLook.cs          # Virtual Camera free look
-│   └─ CinemachineBlendListCamera.cs   # Virtual Camera list/blend
-│
-├─ Components/                        # Pipeline modules của Virtual Camera
-│   ├─ Body/
-│   │   ├─ CinemachineTransposer.cs    # Body component
-│   │   ├─ CinemachineTrackedDolly.cs  # Body component chạy theo path
-│   │   └─ CinemachineOrbitalTransposer.cs
-│   │
-│   ├─ Aim/
-│   │   ├─ CinemachineComposer.cs      # Aim module giữ target trong khung
-│   │   └─ CinemachinePOV.cs           # Aim module theo input
-│   │
-│   ├─ Noise/
-│   │   └─ CinemachineBasicMultiChannelPerlin.cs # Noise/Shake
-│   │
-│   └─ Extensions/                     # Extensions/Modifiers
-│       ├─ CinemachineConfiner.cs
-│       └─ CinemachineFollowZoom.cs
-│
-├─ Utilities/
-│   └─ Helpers.cs                     # Helper / internal utils
-│
-└─ Resources/                         # Default assets/icons/profiles
-
---]]
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Config/CameraTypes.luau">
+<file path="src/core/InputService/Action/InputMapper/init.luau">
+local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CameraContext =
-	require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Context.CameraContext)
-local CameraOutput = require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Output.CameraOutput)
-local CameraResult = require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Output.CameraResult)
 
--- * Types
-export type CameraContext = CameraContext.CameraContext
-export type CameraState = CameraContext.CameraState
-export type CameraInputState = CameraContext.CameraInputState
--- export type CameraControllerState = CameraControllerState.CameraControllerState
+local InputMapperContext = require(script.InputMapperContext)
+local InputMapperTypes = require(script.InputMapperTypes)
 
--- export type CameraVCam = BaseCameraMode.BaseMode
--- export type CameraComponent = BaseCameraController.BaseController
+type Config = InputMapperTypes.Config
+type ContextConfig = InputMapperTypes.ContextConfig
+type ActionConfig = InputMapperTypes.ActionConfig
+type BindingConfig = InputMapperTypes.BindingConfig
 
-export type CameraOutput = CameraOutput.CameraOutput
-export type CameraResult = CameraResult.CameraResult
+type ContextRecord = InputMapperTypes.ContextRecord
+type ActionRecord = InputMapperTypes.ActionRecord
+type BindingRecord = InputMapperTypes.BindingRecord
 
-return {}
-</file>
+type ContextSpec = InputMapperTypes.ContextSpec
+type ActionSpec = InputMapperTypes.ActionSpec
+type BindingSpec = InputMapperTypes.BindingSpec
 
-<file path="src/services/CameraService/CameraSystem/CineCam/Context/CameraContext.luau">
-local CameraInputState = require(script.Parent.CameraInputState)
-local CameraState = require(script.Parent.CameraState)
+local InputMapper = {}
+InputMapper.__index = InputMapper
 
-local CameraContext = {}
-CameraContext.__index = CameraContext
+local function cloneContexts(contexts: { [string]: ContextConfig }?): { [string]: ContextConfig }
+	local result: { [string]: ContextConfig } = {}
+	for contextName, contextConfig in pairs(contexts or {}) do
+		result[contextName] = contextConfig
+	end
+	return result
+end
 
--- * Types
-export type CameraState = CameraState.CameraState
-export type CameraInputState = CameraInputState.InputState
-export type CameraContext = {
-	DeltaTime: number,
-	CameraState: CameraState,
-	InputState: CameraInputState,
-}
+local function enumToName(value: EnumItem?): string?
+	return value and value.Name or nil
+end
 
--- * Constructor
-function CameraContext.new(state: CameraState?, inputState: CameraInputState?): CameraContext
+local function keyCodeFromName(name: any): Enum.KeyCode?
+	if type(name) ~= "string" then
+		return nil
+	end
+	return Enum.KeyCode:FromName(name) or Enum.KeyCode.Unknown
+end
+
+local function actionTypeFromName(name: any): Enum.InputActionType?
+	if type(name) ~= "string" then
+		return nil
+	end
+	return Enum.InputActionType:FromName(name)
+end
+
+local function vector2FromTable(value: any): Vector2?
+	if type(value) ~= "table" then
+		return nil
+	end
+	return Vector2.new(tonumber(value[1]) or 1, tonumber(value[2]) or 1)
+end
+
+local function vector3FromTable(value: any): Vector3?
+	if type(value) ~= "table" then
+		return nil
+	end
+	return Vector3.new(tonumber(value[1]) or 1, tonumber(value[2]) or 1, tonumber(value[3]) or 1)
+end
+
+local function exportBindingSpec(spec: BindingSpec): any
 	return {
-		DeltaTime = 0,
-		CameraState = state or CameraState.new(),
-		InputState = inputState or CameraInputState.new(),
+		PrimaryModifier = enumToName(spec.PrimaryModifier),
+		SecondaryModifier = enumToName(spec.SecondaryModifier),
+
+		KeyCode = enumToName(spec.KeyCode),
+		ClampMagnitudeToOne = spec.ClampMagnitudeToOne,
+		Scale = spec.Scale,
+		Vector2Scale = { spec.Vector2Scale.X, spec.Vector2Scale.Y },
+		Vector3Scale = { spec.Vector3Scale.X, spec.Vector3Scale.Y, spec.Vector3Scale.Z },
+
+		Up = enumToName(spec.Up),
+		Down = enumToName(spec.Down),
+		Left = enumToName(spec.Left),
+		Right = enumToName(spec.Right),
+		Forward = enumToName(spec.Forward),
+		Backward = enumToName(spec.Backward),
 	}
 end
 
-return CameraContext
-</file>
+local function exportActionSpec(spec: ActionSpec): any
+	local bindings: { [string]: any } = {}
+	for bindingName, bindingRecord in pairs(spec.Bindings) do
+		bindings[bindingName] = exportBindingSpec(bindingRecord)
+	end
 
-<file path="src/services/CameraService/CameraSystem/CineCam/Context/CameraInputState.luau">
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local OrderedCollections = require(ReplicatedStorage.Packages.OrderedCollections)
-local CameraGamepadInput =
-	require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Input.CameraGamepadInput)
-local CameraKeyboardInput =
-	require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Input.CameraKeyboardInput)
-local CameraMouseInput =
-	require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Input.CameraMouseInput)
-local CameraTouchInput =
-	require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Input.CameraTouchInput)
-
-local InputState = {}
-InputState.__index = InputState
-
-export type MouseState = CameraMouseInput.MouseState
-export type GamepadState = CameraGamepadInput.GamepadState
-export type TouchState = CameraTouchInput.TouchState
-export type KeyboardState = CameraKeyboardInput.KeyboardState
-export type InputState = {
-	MouseState: MouseState,
-	TouchState: TouchState,
-	GamepadState: GamepadState,
-	KeyboardState: KeyboardState,
-}
-
-function InputState.new(): InputState
 	return {
-		MouseState = {
-			MoveDelta = Vector2.zero,
-			ScrollDelta = 0,
-			ButtonsDown = OrderedCollections.Set.new(),
-			ButtonsPressed = OrderedCollections.Set.new(),
-			ButtonsReleased = OrderedCollections.Set.new(),
-		},
-		TouchState = {
-			Delta = Vector2.zero,
-			Pinch = 0,
-		},
-		GamepadState = {
-			LeftStick = Vector2.zero,
-			RightStick = Vector2.zero,
-			LeftTrigger = 0,
-			RightTrigger = 0,
-		},
-		KeyboardState = {
-			KeysDown = OrderedCollections.Set.new(),
-			KeysPressed = OrderedCollections.Set.new(),
-			KeysReleased = OrderedCollections.Set.new(),
-		},
-	} :: InputState
-end
-
-return InputState
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Context/CameraState.luau">
-local CameraState = {}
-
-export type CameraState = {
-	-- * Objects
-	TrackingObject: Instance?,
-	LookAtObject: Instance?,
-
-	-- * Targets
-	TrackingTarget: Vector3,
-	LookAtTarget: Vector3,
-
-	-- * Offsets
-	PivotOffset: Vector3,
-	CameraOffset: Vector3,
-}
-
-function CameraState.new(): CameraState
-	local state: CameraState = {
-		TrackingObject = nil,
-		LookAtObject = nil,
-
-		TrackingTarget = Vector3.zero, -- camera target
-		LookAtTarget = Vector3.zero, -- lookAt target
-
-		PivotOffset = Vector3.zero, -- offset from target
-		CameraOffset = Vector3.zero, -- offset from pivot
+		Enabled = spec.Enabled,
+		Type = enumToName(spec.Type),
+		Bindings = bindings,
 	}
-	return state
 end
 
-return CameraState
-</file>
+local function exportContextSpec(spec: ContextSpec): any
+	local actions: { [string]: any } = {}
+	for actionName, actionRecord in pairs(spec.Actions) do
+		actions[actionName] = exportActionSpec(actionRecord)
+	end
 
-<file path="src/services/CameraService/CameraSystem/CineCam/Core/CameraBrain.luau">
-local CameraOutput = require(script.Parent.Parent.Output.CameraOutput)
+	return {
+		Sink = spec.Sink,
+		Enabled = spec.Enabled,
+		Priority = spec.Priority,
+		Actions = actions,
+	}
+end
 
-local CameraBrain = {}
-CameraBrain.__index = CameraBrain
+local function importBindingConfig(data: any): BindingConfig
+	return {
+		PrimaryModifier = keyCodeFromName(data.PrimaryModifier),
+		SecondaryModifier = keyCodeFromName(data.SecondaryModifier),
 
-function CameraBrain.new()
-	local self = setmetatable({}, CameraBrain)
-	self.output = CameraOutput.new()
-	self.ActiveVCam = nil
+		KeyCode = keyCodeFromName(data.KeyCode),
+		ClampMagnitudeToOne = data.ClampMagnitudeToOne,
+		Scale = data.Scale,
+		Vector2Scale = vector2FromTable(data.Vector2Scale),
+		Vector3Scale = vector3FromTable(data.Vector3Scale),
+
+		Up = keyCodeFromName(data.Up),
+		Down = keyCodeFromName(data.Down),
+		Left = keyCodeFromName(data.Left),
+		Right = keyCodeFromName(data.Right),
+		Forward = keyCodeFromName(data.Forward),
+		Backward = keyCodeFromName(data.Backward),
+	}
+end
+
+local function importActionConfig(data: any): ActionConfig
+	local actionType = actionTypeFromName(data.Type)
+	assert(actionType, ("Invalid InputActionType: %s"):format(tostring(data.Type)))
+
+	local bindings: { [string]: BindingConfig }? = nil
+	if type(data.Bindings) == "table" then
+		bindings = {}
+		for bindingName, bindingData in pairs(data.Bindings) do
+			(bindings :: any)[bindingName] = importBindingConfig(bindingData)
+		end
+	end
+
+	return {
+		Enabled = data.Enabled,
+		Type = actionType,
+		Bindings = bindings,
+	}
+end
+
+local function importContextConfig(data: any): ContextConfig
+	local actions: { [string]: ActionConfig }? = nil
+	if type(data.Actions) == "table" then
+		actions = {}
+		for actionName, actionData in pairs(data.Actions) do
+			(actions :: any)[actionName] = importActionConfig(actionData)
+		end
+	end
+
+	return {
+		Sink = data.Sink,
+		Enabled = data.Enabled,
+		Priority = data.Priority,
+		Actions = actions,
+	}
+end
+
+function InputMapper.new(config: Config)
+	local self = setmetatable({}, InputMapper)
+
+	local container = Instance.new("Folder")
+	container.Name = config.ContainerName or "InputSystem"
+	container.Parent = config.Parent or ReplicatedStorage
+
+	self._config = {
+		Parent = config.Parent,
+		ContainerName = config.ContainerName,
+		Contexts = cloneContexts(config.Contexts),
+	}
+
+	self._container = container
+	self._contexts = {} :: { [string]: ContextRecord }
+	self._connections = {} :: { [string]: { RBXScriptConnection } }
+
+	self:Build()
 	return self
 end
 
-function CameraBrain:SetActiveVCam(vcam)
-	self.ActiveVCam = vcam
+function InputMapper:_ensureContextConfig(contextName: string): ContextConfig
+	self._config.Contexts = self._config.Contexts or {}
+
+	local contextConfig = self._config.Contexts[contextName]
+	if not contextConfig then
+		contextConfig = {
+			Actions = {},
+		}
+		self._config.Contexts[contextName] = contextConfig
+	elseif contextConfig.Actions == nil then
+		contextConfig.Actions = {}
+	end
+
+	return contextConfig
 end
 
-function CameraBrain:Update(context)
-	if not self.ActiveVCam then
+function InputMapper:_clearConnections(contextName: string)
+	local list = self._connections[contextName]
+	if not list then
 		return
 	end
 
-	self.ActiveVCam:Update(context, self.output)
-
-	local camera = workspace.CurrentCamera
-	camera.CameraType = Enum.CameraType.Scriptable
-	camera.CFrame = self.output.Cframe
-	camera.FieldOfView = self.output.Fov
-end
-
-return CameraBrain
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Input/CameraGamepadInput.luau">
-local UserInputService = game:GetService("UserInputService")
-
-local GamepadInput = {}
-GamepadInput.__index = GamepadInput
-
-export type GamepadState = {
-	LeftStick: Vector2,
-	RightStick: Vector2,
-	LeftTrigger: number,
-	RightTrigger: number,
-}
-
-export type GamepadInput = typeof(setmetatable(
-	{} :: {
-		GamepadState: GamepadState,
-	},
-	GamepadInput
-))
-
-function GamepadInput.new(gamepadState: GamepadState): GamepadInput
-	local self = setmetatable({
-		GamepadState = gamepadState,
-	}, GamepadInput)
-
-	UserInputService.InputChanged:Connect(function(input)
-		local state: GamepadState = self.GamepadState
-		if input.UserInputType == Enum.UserInputType.Gamepad1 then
-			if input.KeyCode == Enum.KeyCode.Thumbstick1 then
-				state.RightStick.X = input.Position.X
-				state.RightStick.Y = input.Position.Y
-			elseif input.KeyCode == Enum.KeyCode.Thumbstick2 then
-				state.LeftStick.X = input.Position.X
-				state.LeftStick.Y = input.Position.Y
-			elseif input.KeyCode == Enum.KeyCode.ButtonL2 then
-				state.LeftTrigger = input.Position.Z
-			elseif input.KeyCode == Enum.KeyCode.ButtonR2 then
-				state.RightTrigger = input.Position.Z
-			end
-		end
-	end)
-
-	return self
-end
-
-return GamepadInput
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Input/CameraInput.luau">
-local CameraInputState = require(script.Parent.Parent.Context.CameraInputState)
-local CameraGamepadInput = require(script.Parent.CameraGamepadInput)
-local CameraKeyboardInput = require(script.Parent.CameraKeyboardInput)
-local CameraMouseInput = require(script.Parent.CameraMouseInput)
-local CameraTouchInput = require(script.Parent.CameraTouchInput)
-
-local CameraInput = {}
-CameraInput.__index = CameraInput
-
-export type InputState = CameraInputState.InputState
-export type CameraInputData = {
-	InputState: InputState,
-	MouseInput: CameraMouseInput.MouseInput,
-	GamepadInput: CameraGamepadInput.GamepadInput,
-	TouchInput: CameraTouchInput.TouchInput,
-	KeyboardInput: CameraKeyboardInput.KeyboardInput,
-}
-export type CameraInput = typeof(setmetatable({} :: CameraInputData, CameraInput))
-
-function CameraInput.new(inputState: InputState): CameraInput
-	local self = setmetatable({
-		InputState = inputState,
-		MouseInput = CameraMouseInput.new(inputState.MouseState),
-		GamepadInput = CameraGamepadInput.new(inputState.GamepadState),
-		TouchInput = CameraTouchInput.new(inputState.TouchState),
-		KeyboardInput = CameraKeyboardInput.new(inputState.KeyboardState), -- * Auto update
-	}, CameraInput)
-
-	return self
-end
-
-function CameraInput:Update(dt) end
-
-function CameraInput:Flush()
-	self.MouseInput:Flush()
-	self.KeyboardInput:Flush()
-end
-
-function CameraInput:GetInputState(): InputState
-	return self.InputState
-end
-
-return CameraInput
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Input/CameraKeyboardInput.luau">
-local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local OrderedCollections = require(ReplicatedStorage.Packages.OrderedCollections)
-
-local KeyboardInput = {}
-KeyboardInput.__index = KeyboardInput
-
-export type KeyboardState = {
-	KeysDown: typeof(OrderedCollections.Set.new()),
-	KeysPressed: typeof(OrderedCollections.Set.new()),
-	KeysReleased: typeof(OrderedCollections.Set.new()),
-}
-
-export type KeyboardInput = typeof(setmetatable(
-	{} :: {
-		KeyboardState: KeyboardState,
-	},
-	KeyboardInput
-))
-
-function KeyboardInput.new(keyState: KeyboardState): KeyboardInput
-	local self = setmetatable({
-		KeyboardState = keyState,
-	}, KeyboardInput)
-
-	self:Init()
-	return self
-end
-
-function KeyboardInput:Init()
-	UserInputService.InputBegan:Connect(function(inputObject, gameProcessedEvent)
-		if gameProcessedEvent then
-			return
-		end
-
-		if inputObject.UserInputType ~= Enum.UserInputType.Keyboard then
-			return
-		end
-
-		local keyCode = inputObject.KeyCode
-		if keyCode == Enum.KeyCode.Unknown then
-			return
-		end
-
-		if not self.KeyboardState.KeysDown:Has(keyCode) then
-			self.KeyboardState.KeysDown:PushBack(keyCode)
-			self.KeyboardState.KeysPressed:PushBack(keyCode)
-		end
-	end)
-
-	UserInputService.InputEnded:Connect(function(inputObject, _gameProcessedEvent)
-		if inputObject.UserInputType ~= Enum.UserInputType.Keyboard then
-			return
-		end
-
-		local keyCode = inputObject.KeyCode
-		if keyCode == Enum.KeyCode.Unknown then
-			return
-		end
-
-		if not self.KeyboardState.KeysReleased:Has(keyCode) then
-			self.KeyboardState.KeysReleased:PushBack(keyCode)
-		end
-
-		if self.KeyboardState.KeysDown:Has(keyCode) then
-			self.KeyboardState.KeysDown:Pop(keyCode)
-		end
-	end)
-end
-
-function KeyboardInput:Flush()
-	local state: KeyboardState = self.KeyboardState
-	state.KeysPressed:Clear()
-	state.KeysReleased:Clear()
-end
-
-return KeyboardInput
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Input/CameraMouseInput.luau">
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
-local OrderedCollections = require(ReplicatedStorage.Packages.OrderedCollections)
-
-local MouseInput = {}
-MouseInput.__index = MouseInput
-
-type Set = typeof(OrderedCollections.Set.new())
-export type MouseState = {
-	MoveDelta: Vector2,
-	ScrollDelta: number,
-	ButtonsDown: Set,
-	ButtonsPressed: Set,
-	ButtonsReleased: Set,
-}
-export type MouseInput = typeof(setmetatable(
-	{} :: {
-		MouseState: MouseState,
-	},
-	MouseInput
-))
-
-function isMouseButtonType(input: Enum.UserInputType): boolean
-	return input == Enum.UserInputType.MouseButton1
-		or input == Enum.UserInputType.MouseButton2
-		or input == Enum.UserInputType.MouseButton3
-end
-
-function MouseInput.new(mouseState: MouseState): MouseInput
-	local self = setmetatable({
-		MouseState = mouseState,
-		LastLocation = UserInputService:GetMouseLocation(),
-	}, MouseInput)
-
-	self:Init()
-	return self
-end
-
-function MouseInput:Init()
-	local state: MouseState = self.MouseState
-
-	do -- * Scroll and Movement
-		UserInputService.InputChanged:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseWheel then
-				state.ScrollDelta += input.Position.Z * -1
-			elseif input.UserInputType == Enum.UserInputType.MouseMovement then
-				state.MoveDelta = state.MoveDelta + (UserInputService:GetMouseLocation() - self.LastLocation)
-				self.LastLocation = UserInputService:GetMouseLocation()
-			end
-		end)
+	for _, conn in ipairs(list) do
+		conn:Disconnect()
 	end
 
-	do -- * Buttons
-		UserInputService.InputBegan:Connect(function(input: InputObject, gpc: boolean)
-			if gpc then
-				return
-			end
+	self._connections[contextName] = nil
+end
 
-			local inputType = input.UserInputType
-			if isMouseButtonType(inputType) then
-				if not state.ButtonsDown:Has(inputType) then
-					state.ButtonsDown:PushBack(inputType)
-					state.ButtonsPressed:PushBack(inputType)
-				end
-			end
-		end)
-
-		UserInputService.InputEnded:Connect(function(input: InputObject, gpc: boolean)
-			if gpc then
-				return
-			end
-
-			local inputType = input.UserInputType
-			if isMouseButtonType(inputType) then
-				if not state.ButtonsReleased:Has(inputType) then
-					state.ButtonsReleased:PushBack(inputType)
-				end
-
-				if state.ButtonsDown:Has(inputType) then
-					state.ButtonsDown:Pop(inputType)
-				end
-			end
-		end)
+function InputMapper:_syncRecordParents()
+	for _, contextRecord in pairs(self._contexts) do
+		if contextRecord.Instance then
+			contextRecord.Instance.Parent = self._container
+		end
 	end
 end
 
-function MouseInput:Flush()
-	local state = self.MouseState
-	state.MoveDelta = Vector2.zero
-	state.ScrollDelta = 0
-	state.ButtonsPressed:Clear()
-	state.ButtonsReleased:Clear()
-end
+function InputMapper:Build()
+	local desiredContexts = self._config.Contexts or {}
 
-return MouseInput
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Input/CameraTouchInput.luau">
-local UserInputService = game:GetService("UserInputService")
-
-local TouchInput = {}
-TouchInput.__index = TouchInput
-
-export type TouchState = {
-	Delta: Vector2,
-	Pinch: number,
-}
-export type TouchInput = typeof(setmetatable(
-	{} :: {
-		TouchState: TouchState,
-	},
-	TouchInput
-))
-
-function TouchInput.new(touchState: TouchState): TouchInput
-	local self = setmetatable({
-		TouchState = touchState,
-	}, TouchInput)
-
-	return self
-end
-
-function TouchInput:Init()
-	local state: TouchState = self.TouchState
-	local lastPos = nil
-	UserInputService.TouchMoved:Connect(function(touch)
-		if lastPos then
-			local delta = touch.Position - lastPos
-			state.Delta.X = delta.X
-			state.Delta.Y = delta.Y
+	for contextName, contextRecord in pairs(self._contexts) do
+		if desiredContexts[contextName] == nil then
+			self:_clearConnections(contextName)
+			if contextRecord.Instance then
+				contextRecord.Instance:Destroy()
+			end
+			self._contexts[contextName] = nil
 		end
-		lastPos = touch.Position
-	end)
-
-	UserInputService.TouchPinch:Connect(function(pinches)
-		state.Pinch = pinches.Position.Z
-	end)
-end
-
-return TouchInput
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Output/CameraOutput.luau">
-export type CameraOutput = {
-	Cframe: CFrame,
-	Fov: number,
-
-	Reset: (self: CameraOutput) -> (),
-}
-
-local CameraOutput = {}
-
-function CameraOutput.new(cframe: CFrame?, fov: number?): CameraOutput
-	local self = setmetatable({
-		Cframe = cframe or CFrame.new(),
-		Fov = fov or 70,
-	}, CameraOutput)
-	return self
-end
-
-function CameraOutput:Reset()
-	self.Cframe = CFrame.new()
-	self.Fov = 70
-end
-
-return CameraOutput
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Output/CameraResult.luau">
-local CameraResult = {}
-CameraResult.__index = CameraResult
-
-export type CameraResult = {
-	Body: CFrame,
-	Aim: CFrame,
-	Noise: CFrame,
-	Fov: number,
-
-	Reset: (self: CameraResult) -> (),
-}
-
-function CameraResult.new(body: CFrame?, aim: CFrame?, noise: CFrame?): CameraResult
-	local self = setmetatable({
-		Body = body or CFrame.new(),
-		Aim = aim or CFrame.new(),
-		Noise = noise or CFrame.new(),
-		Fov = 70,
-	}, CameraResult)
-
-	return self
-end
-
-function CameraResult:Reset()
-	self.Body = CFrame.new()
-	self.Aim = CFrame.new()
-	self.Noise = CFrame.new()
-	self.Fov = 70
-end
-
-return CameraResult
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Pipe/Modules/Aim/CameraLookAtModule.luau">
-local LookAtModule = {}
-LookAtModule.__index = LookAtModule
-
-function LookAtModule.new()
-	local self = setmetatable({}, LookAtModule)
-	return self
-end
-
-function LookAtModule:Update(context, result)
-	local camPos = result.Body.Position
-	result.Aim = CFrame.lookAt(camPos, context.CameraState.LookAtTarget)
-end
-
-return LookAtModule
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Pipe/Modules/Body/CameraFollowModule.luau">
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CameraAxisState =
-	require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Utilities.CameraAxisState)
-local FollowModule = {}
-FollowModule.__index = FollowModule
-
-function FollowModule.new(target)
-	local self = setmetatable({}, FollowModule)
-	self.Distance = CameraAxisState.new(Vector2.new(5, 50))
-	return self
-end
-
-function FollowModule:Update(context, result)
-	local dt = context.DeltaTime
-	local input = context.InputState
-
-	self.Distance:AddjustTarget(input.MouseState.Zoom)
-	self.Distance:Update(dt)
-
-	local pos = self.Target.Position - self.Target.CFrame.LookVector * self.Distance
-	result.CFrame = CFrame.new(pos, self.Target.Position)
-end
-
-return FollowModule
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Pipe/Modules/Body/CameraOrbitModule.luau">
-local CameraContext = require(script.Parent.Parent.Parent.Parent.Context.CameraContext)
-local CameraAxisState = require(script.Parent.Parent.Parent.Parent.Utilities.CameraAxisState)
-
-local OrbitModule = {}
-OrbitModule.__index = OrbitModule
-
-type CameraContext = CameraContext.CameraContext
-type AxisState = CameraAxisState.CameraAxisState
-
-function OrbitModule.new()
-	local self = setmetatable({}, OrbitModule)
-	self.Yaw = CameraAxisState.new()
-	self.Pitch = CameraAxisState.new(Vector2.new(-69, 39))
-	self.Distance = CameraAxisState.new(Vector2.new(5, 50))
-
-	return self
-end
-
-function OrbitModule:Update(context: CameraContext, result)
-	local dt = context.DeltaTime
-	local lookAtPos = context.CameraState.LookAtTarget
-
-	local yaw: AxisState = self.Yaw
-	local pitch: AxisState = self.Pitch
-	local distance: AxisState = self.Distance
-
-	-- print(distance.Current)
-
-	-- update axis states
-	yaw:Update(dt)
-	pitch:Update(dt)
-	distance:Update(dt)
-
-	-- build orbit position
-	local origin = lookAtPos + context.CameraState.PivotOffset
-	local offset = CFrame.Angles(math.rad(yaw.Current), math.rad(pitch.Current), 0)
-		* CFrame.new(0, 0, -distance.Current)
-
-	result.Body = CFrame.lookAt(offset.Position, origin)
-end
-return OrbitModule
-
--- local origin = ((cameraState.LookAtTarget and cameraState.LookAtTarget.Position) or Vector3.zero)
--- 	+ cameraState.PivotOffset
-
--- local rotationCFrame = CFrame.fromEulerAnglesYXZ(math.rad(pitch), math.rad(yaw), 0)
-
--- local orbitOffset = rotationCFrame * Vector3.new(0, 0, self._currentDistance)
--- local target = origin + orbitOffset
-
--- return CFrame.lookAt(target, origin) * CFrame.new(cameraState.CameraOffset)
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Pipe/Modules/Extensions/CameraTargetObjectModule.luau">
-local TargetModule = {}
-TargetModule.__index = TargetModule
-
-function TargetModule.new(trackingObj: Instance?, lookAtObj: Instance?)
-	local self = setmetatable({}, TargetModule)
-	self.TrackingObject = trackingObj
-	self.LookAtObject = lookAtObj
-	return self
-end
-
-function TargetModule:SetTargets(trackingObj, lookAtObj)
-	self.TrackingObject = trackingObj
-	self.LookAtObject = lookAtObj
-end
-
-function TargetModule:Update(context, result)
-	local cameraState = context.CameraState
-
-	cameraState.TrackingObject = self.TrackingObject or cameraState.TrackingObject
-	cameraState.LookAtObject = self.LookAtObject or cameraState.LookAtObject
-
-	cameraState.TrackingTarget = cameraState.TrackingObject and cameraState.TrackingObject.Position
-		or cameraState.TrackingTarget
-	cameraState.LookAtTarget = cameraState.LookAtObject and cameraState.LookAtObject.Position
-		or cameraState.LookAtTarget
-end
-
-return TargetModule
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Pipe/Modules/Noise/CameraOffsetModule.luau">
-local CameraOffsetModule = {}
-CameraOffsetModule.__index = CameraOffsetModule
-
-function CameraOffsetModule.new()
-	local self = setmetatable({}, CameraOffsetModule)
-	return self
-end
-
-function CameraOffsetModule:Update(context, result)
-	local offset = context.CameraState.CameraOffset
-	result.Body *= CFrame.new(offset)
-end
-
-return CameraOffsetModule
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Pipe/Pipeline.luau">
-local CameraPipeline = {}
-CameraPipeline.__index = CameraPipeline
-
-function CameraPipeline.new(modules, extensions)
-	local self = setmetatable({}, CameraPipeline)
-	self.Modules = modules or {}
-	self.Extensions = extensions or {}
-	return self
-end
-
-function CameraPipeline:Run(context, result)
-	for _, module in ipairs(self.Modules) do
-		module:Update(context, result)
 	end
-	for _, extension in ipairs(self.Extensions) do
-		extension:Update(context, result)
+
+	for contextName, contextConfig in pairs(desiredContexts) do
+		local record = self._contexts[contextName]
+
+		if record then
+			InputMapperContext.UpdateRecord(record, contextConfig)
+		else
+			record = InputMapperContext.CreateRecord(contextConfig)
+			self._contexts[contextName] = record
+		end
+
+		record.Instance.Name = contextName
+		record.Instance.Parent = self._container
 	end
-end
 
-return CameraPipeline
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Utilities/CameraAxisState.luau">
-local CameraAxisState = {}
-CameraAxisState.__index = CameraAxisState
-
-export type CameraAxisStateData = {
-	Target: number,
-	Current: number,
-	Limit: Vector2?,
-	Sensitivity: number,
-	SmoothFactor: number,
-}
-export type CameraAxisState = typeof(setmetatable({} :: CameraAxisStateData, CameraAxisState))
-
-function CameraAxisState.new(limit: Vector2?, sensitivity: number?, smooth: number?): CameraAxisState
-	local data: CameraAxisStateData = {
-		Target = 0,
-		Current = 0,
-		Limit = limit,
-		Sensitivity = sensitivity or 1,
-		SmoothFactor = smooth or 4,
-	}
-	local self: CameraAxisState = setmetatable(data, CameraAxisState)
 	return self
 end
 
--- Reset
-function CameraAxisState:Reset()
-	self.Target = self:ClampValue(0)
-	self.Current = self:ClampValue(0)
+function InputMapper:SetContext(contextName: string, contextConfig: ContextConfig)
+	self._config.Contexts = self._config.Contexts or {}
+	self._config.Contexts[contextName] = contextConfig
+	return self:Build()
 end
 
--- Clamp
-function CameraAxisState:ClampTarget()
-	self.Target = self:ClampValue(self.Target)
-end
-
-function CameraAxisState:ClampCurrent()
-	self.Current = self:ClampValue(self.Current)
-end
-
-function CameraAxisState:ClampValue(value: number): number
-	if self.Limit then
-		return math.clamp(value, self.Limit.X, self.Limit.Y)
+function InputMapper:RemoveContext(contextName: string)
+	if self._config.Contexts then
+		self._config.Contexts[contextName] = nil
 	end
-	return value
+	return self:Build()
 end
 
--- Alpha
-function CameraAxisState:GetAlpha(dt: number)
-	return 1 - math.exp(-self.SmoothFactor * dt)
+function InputMapper:SetAction(contextName: string, actionName: string, actionConfig: ActionConfig)
+	local contextConfig = self:_ensureContextConfig(contextName)
+	contextConfig.Actions = contextConfig.Actions or {}
+	contextConfig.Actions[actionName] = actionConfig
+	return self:Build()
 end
 
--- Update
-function CameraAxisState:AdjustTarget(value: number)
-	self.Target += value * self.Sensitivity
+function InputMapper:RemoveAction(contextName: string, actionName: string)
+	local contextConfig = self._config.Contexts and self._config.Contexts[contextName]
+	if contextConfig and contextConfig.Actions then
+		contextConfig.Actions[actionName] = nil
+	end
+	return self:Build()
 end
 
-function CameraAxisState:LerpCurrent(dt)
-	self.Current = math.lerp(self.Current, self.Target, self.SmoothFactor * dt)
-end
-
-function CameraAxisState:Update(dt)
-	self:ClampTarget()
-	self:LerpCurrent(dt)
-	self:ClampCurrent()
-end
-
-return CameraAxisState
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/Utilities/CameraUtils.luau">
-local CameraUtils = {}
-
-function CameraUtils.GetAlpha(dt, smooth)
-	return 1 - math.exp(-smooth * dt)
-end
-
-return CameraUtils
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/VirtualCameras/BaseVCam.luau">
-local CameraResult = require(script.Parent.Parent.Output.CameraResult)
-local CameraPipeline = require(script.Parent.Parent.Pipe.Pipeline)
-
-local BaseVirtualCamera = {}
-BaseVirtualCamera.__index = BaseVirtualCamera
-
-function BaseVirtualCamera.new(modules)
-	local self = setmetatable({}, BaseVirtualCamera)
-	self.Pipeline = CameraPipeline.new(modules or {})
-	self.Result = CameraResult.new()
-	return self
-end
-
-function BaseVirtualCamera:Update(context)
-	self.Pipeline:Run(context, self.Result)
-	return self.Result
-end
-
-return BaseVirtualCamera
-</file>
-
-<file path="src/services/CameraService/CameraSystem/CineCam/VirtualCameras/OrbitVCam.luau">
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local CameraContext =
-	require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Context.CameraContext)
-local CameraLookAtModule =
-	require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Pipe.Modules.Aim.CameraLookAtModule)
-local CameraTargetObjectModule = require(
-	ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Pipe.Modules.Extensions.CameraTargetObjectModule
+function InputMapper:SetBinding(
+	contextName: string,
+	actionName: string,
+	bindingName: string,
+	bindingConfig: BindingConfig
 )
-local CameraOffsetModule =
-	require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Pipe.Modules.Noise.CameraOffsetModule)
-local CameraOrbitModule = require(script.Parent.Parent.Pipe.Modules.Body.CameraOrbitModule)
-local BaseVirtualCamera = require(script.Parent.Parent.VirtualCameras.BaseVCam)
-
-type CameraContext = CameraContext.CameraContext
-
-local OrbitVCam = {}
-OrbitVCam.__index = OrbitVCam
-
-local function GetTestPart()
-	local part = Instance.new("Part")
-	part.Anchored = true
-	part.Size = Vector3.one * 2
-	part.Parent = workspace
-	return part
-end
-
-function OrbitVCam.new()
-	local orbitModule = CameraOrbitModule.new()
-	local lookAtModule = CameraLookAtModule.new()
-	local offsetModule = CameraOffsetModule.new()
-	local objectTargetModule = CameraTargetObjectModule.new(nil, GetTestPart())
-
-	local self = setmetatable(
-		BaseVirtualCamera.new({
-			objectTargetModule,
-			orbitModule,
-			-- lookAtModule,
-			-- offsetModule,
-		}),
-		OrbitVCam
+	local contextConfig = self._config.Contexts and self._config.Contexts[contextName]
+	assert(contextConfig, ("Context not found: %s"):format(contextName))
+	assert(
+		contextConfig.Actions and contextConfig.Actions[actionName],
+		("Action not found: %s/%s"):format(contextName, actionName)
 	)
 
-	function self:_updateOrbitInput(context: CameraContext)
-		local input = context.InputState
-		local mouseState = input.MouseState
-		if mouseState.ButtonsDown:Has(Enum.UserInputType.MouseButton2) then
-			orbitModule.Yaw:AdjustTarget(mouseState.MoveDelta.X)
-			orbitModule.Pitch:AdjustTarget(mouseState.MoveDelta.Y)
-			orbitModule.Distance:AdjustTarget(mouseState.ScrollDelta)
+	local actionConfig = contextConfig.Actions[actionName]
+	actionConfig.Bindings = actionConfig.Bindings or {}
+	actionConfig.Bindings[bindingName] = bindingConfig
+
+	return self:Build()
+end
+
+function InputMapper:RemoveBinding(contextName: string, actionName: string, bindingName: string)
+	local contextConfig = self._config.Contexts and self._config.Contexts[contextName]
+	if
+		contextConfig
+		and contextConfig.Actions
+		and contextConfig.Actions[actionName]
+		and contextConfig.Actions[actionName].Bindings
+	then
+		contextConfig.Actions[actionName].Bindings[bindingName] = nil
+	end
+	return self:Build()
+end
+
+function InputMapper:GetContextRecord(contextName: string): ContextRecord?
+	return self._contexts[contextName]
+end
+
+function InputMapper:GetActionRecord(contextName: string, actionName: string): ActionRecord?
+	local contextRecord = self._contexts[contextName]
+	return contextRecord and contextRecord.Actions[actionName] or nil
+end
+
+function InputMapper:GetBindingRecord(contextName: string, actionName: string, bindingName: string): BindingRecord?
+	local actionRecord = self:GetActionRecord(contextName, actionName)
+	return actionRecord and actionRecord.Bindings[bindingName] or nil
+end
+
+function InputMapper:GetContext(contextName: string): InputContext?
+	local record = self._contexts[contextName]
+	return record and record.Instance or nil
+end
+
+function InputMapper:GetAction(contextName: string, actionName: string): InputAction?
+	local actionRecord = self:GetActionRecord(contextName, actionName)
+	return actionRecord and actionRecord.Instance or nil
+end
+
+function InputMapper:GetBinding(contextName: string, actionName: string, bindingName: string): InputBinding?
+	local bindingRecord = self:GetBindingRecord(contextName, actionName, bindingName)
+	return bindingRecord and bindingRecord.Instance or nil
+end
+
+function InputMapper:ConnectAction(contextName: string, actionName: string, callback: (any) -> ())
+	local action = self:GetAction(contextName, actionName)
+	assert(action, ("Action not found: %s/%s"):format(contextName, actionName))
+
+	local conn = action.StateChanged:Connect(function(value)
+		callback(value)
+	end)
+
+	self._connections[contextName] = self._connections[contextName] or {}
+	table.insert(self._connections[contextName], conn)
+
+	return conn
+end
+
+function InputMapper:ExportKeymap()
+	local contexts: { [string]: any } = {}
+
+	for contextName, contextRecord in pairs(self._contexts) do
+		contexts[contextName] = exportContextSpec(contextRecord)
+	end
+
+	return {
+		Contexts = contexts,
+	}
+end
+
+function InputMapper:ImportKeymap(data: any)
+	local contextsData = data and (data.Contexts or data)
+	assert(type(contextsData) == "table", "Invalid keymap payload")
+
+	local contexts: { [string]: ContextConfig } = {}
+	for contextName, contextData in pairs(contextsData) do
+		contexts[contextName] = importContextConfig(contextData)
+	end
+
+	self._config.Contexts = contexts
+	self:Build()
+end
+
+function InputMapper:SerializeKeymap(): string
+	return HttpService:JSONEncode(self:ExportKeymap())
+end
+
+function InputMapper:DeserializeKeymap(json: string)
+	local ok, data = pcall(function()
+		return HttpService:JSONDecode(json)
+	end)
+
+	if not ok then
+		return false, data
+	end
+
+	self:ImportKeymap(data)
+	return true
+end
+
+function InputMapper:Destroy()
+	for _, list in pairs(self._connections) do
+		for _, conn in ipairs(list) do
+			conn:Disconnect()
 		end
 	end
 
-	return self
+	table.clear(self._connections)
+	table.clear(self._contexts)
+
+	if self._container then
+		self._container:Destroy()
+		self._container = nil
+	end
 end
 
-function OrbitVCam:Update(context: CameraContext, output)
-	local input = context.InputState
-	print(input.MouseState.ScrollDelta)
-
-	-- input
-	self:_updateOrbitInput(context)
-
-	-- ouput
-	local result = BaseVirtualCamera.Update(self, context)
-	output.Cframe = result.Body * result.Aim * result.Noise
-	output.Fov = result.Fov
-end
-
-return OrbitVCam
+return InputMapper
 </file>
 
-<file path="src/services/CameraService/CameraSystem/init.luau">
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local CameraInput = require(script.CineCam.Input.CameraInput)
-local OrbitVCam = require(script.CineCam.VirtualCameras.OrbitVCam)
-local CameraBrain = require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Core.CameraBrain)
-local CameraContext =
-	require(ReplicatedStorage.Shared.Services.CameraService.CameraSystem.CineCam.Context.CameraContext)
+<file path="src/core/InputService/Action/InputMapper/InputMapperAction.luau">
+local InputMapperBinding = require(script.Parent.InputMapperBinding)
+local InputMapperTypes = require(script.Parent.InputMapperTypes)
 
-local CameraSystem = {}
-CameraSystem.__index = CameraSystem
+local ActionUtils = {}
 
-local MAX_DELTA_TIME = 1 / 30 -- 30 hz
-local RENDER_NAME = "CameraSystemRender"
-local RENDER_PRIORITY = Enum.RenderPriority.Camera.Value
+type ActionConfig = InputMapperTypes.ActionConfig
+type ActionSpec = InputMapperTypes.ActionSpec
+type ActionRecord = InputMapperTypes.ActionRecord
 
-function CameraSystem.new()
-	local context = CameraContext.new()
-	local self = setmetatable({
-		brain = CameraBrain.new(),
-		context = context,
-		input = CameraInput.new(context.InputState),
-	}, CameraSystem)
+type BindingSpec = InputMapperTypes.BindingSpec
+type BindingRecord = InputMapperTypes.BindingRecord
 
-	return self
+function ActionUtils.ConvertSpec(config: ActionConfig): ActionSpec
+	local bindingSpecs: { [string]: BindingSpec } = {}
+
+	if config.Bindings then
+		for bindingName, bindingConfig in pairs(config.Bindings) do
+			bindingSpecs[bindingName] = InputMapperBinding.ConvertSpec(config.Type, bindingConfig)
+		end
+	end
+
+	return {
+		Enabled = if config.Enabled ~= nil then config.Enabled else true,
+		Type = config.Type,
+		Bindings = bindingSpecs,
+	}
 end
 
-function CameraSystem:Update(dt: number)
-	dt = math.min(dt, MAX_DELTA_TIME)
-	self.context.DeltaTime = dt
+function ActionUtils.ApplySpec(action: InputAction, spec: ActionSpec)
+	action.Enabled = spec.Enabled
+	action.Type = spec.Type
 
-	self.input:Update(dt)
-	self.brain:Update(self.context)
-	self.input:Flush()
+	for _, binding in pairs(action:GetChildren()) do
+		if not spec.Bindings[binding.Name] then
+			binding:Destroy()
+		end
+	end
+
+	for bindingName, bindingSpec in pairs(spec.Bindings) do
+		local binding = action:FindFirstChild(bindingName)
+		if binding then
+			InputMapperBinding.ApplySpec(binding, spec.Type, bindingSpec)
+		else
+			binding = InputMapperBinding.CreateBinding(spec.Type, bindingSpec)
+			binding.Name = bindingName
+			binding.Parent = action
+		end
+	end
 end
 
-function CameraSystem:Init()
-	self.brain:SetActiveVCam(OrbitVCam.new())
-	self:Start()
+function ActionUtils.CreateAction(config: ActionConfig)
+	local action = Instance.new("InputAction")
+	ActionUtils.ApplyConfig(action, config)
+	return action
 end
 
-function CameraSystem:Start()
-	if self.running then
+function ActionUtils.CreateRecordFromInstance(action: InputAction, spec: ActionSpec): ActionRecord
+	local bindings: { [string]: BindingRecord } = {}
+
+	for bindingName, bindingSpec in pairs(spec.Bindings) do
+		local bindingInstance = action:FindFirstChild(bindingName)
+		bindings[bindingName] = {
+			Instance = bindingInstance :: InputBinding?,
+			Spec = bindingSpec,
+		}
+	end
+
+	return {
+		Instance = action,
+		Spec = spec,
+		Bindings = bindings,
+	}
+end
+
+function ActionUtils.ApplyConfig(action: InputAction, config: ActionConfig)
+	local spec = ActionUtils.ConvertSpec(config)
+	ActionUtils.ApplySpec(action, spec)
+end
+
+function ActionUtils.UpdateRecord(record: ActionRecord, config: ActionConfig)
+	local instance = record.Instance
+	if not instance then
+		instance = ActionUtils.CreateAction(config)
+	end
+
+	local spec = ActionUtils.ConvertSpec(config)
+	ActionUtils.ApplySpec(instance, spec)
+
+	for bindingName, bindingRecord in pairs(record.Bindings) do
+		if not spec.Bindings[bindingName] then
+			if bindingRecord.Instance then
+				bindingRecord.Instance:Destroy()
+			end
+			record.Bindings[bindingName] = nil
+		end
+	end
+
+	for bindingName, bindingSpec in pairs(spec.Bindings) do
+		local bindingInstance = instance:FindFirstChild(bindingName)
+		local bindingRecord = record.Bindings[bindingName]
+
+		if bindingRecord then
+			bindingRecord.Instance = bindingInstance :: InputBinding?
+			bindingRecord.Spec = bindingSpec
+		else
+			record.Bindings[bindingName] = {
+				Instance = bindingInstance :: InputBinding?,
+				Spec = bindingSpec,
+			}
+		end
+	end
+
+	record.Instance = instance
+	record.Spec = spec
+end
+
+function ActionUtils.CreateRecord(config: ActionConfig): ActionRecord
+	local spec = ActionUtils.ConvertSpec(config)
+	local action = ActionUtils.CreateAction(config)
+	return ActionUtils.CreateRecordFromInstance(action, spec)
+end
+
+return ActionUtils
+</file>
+
+<file path="src/core/InputService/Action/InputMapper/InputMapperBinding.luau">
+local InputMapperTypes = require(script.Parent.InputMapperTypes)
+
+local BindingUtils = {}
+
+type BindingConfig = InputMapperTypes.BindingConfig
+type BindingSpec = InputMapperTypes.BindingSpec
+type BindingRecord = InputMapperTypes.BindingRecord
+
+local function keyOr(keyCode: Enum.KeyCode?): Enum.KeyCode
+	return keyCode or Enum.KeyCode.Unknown
+end
+
+local function valueOr<T>(value: T?, defaultValue: T): T
+	return value ~= nil and value or defaultValue
+end
+
+local function applyD1(spec: BindingSpec, config: BindingConfig)
+	spec.ClampMagnitudeToOne = valueOr(config.ClampMagnitudeToOne, false)
+	spec.Up = keyOr(config.Up)
+	spec.Down = keyOr(config.Down)
+end
+
+local function applyD2(spec: BindingSpec, config: BindingConfig)
+	applyD1(spec, config)
+	spec.Left = keyOr(config.Left)
+	spec.Right = keyOr(config.Right)
+end
+
+local function applyD3(spec: BindingSpec, config: BindingConfig)
+	applyD2(spec, config)
+	spec.Forward = keyOr(config.Forward)
+	spec.Backward = keyOr(config.Backward)
+end
+
+function BindingUtils.ConvertSpec(actionType: Enum.InputActionType, config: BindingConfig): BindingSpec
+	local spec: any = {
+		PrimaryModifier = keyOr(config.PrimaryModifier),
+		SecondaryModifier = keyOr(config.SecondaryModifier),
+
+		KeyCode = Enum.KeyCode.Unknown,
+		UIButton = nil,
+
+		ClampMagnitudeToOne = false,
+		Scale = 1,
+		Vector2Scale = Vector2.new(1, 1),
+		Vector3Scale = Vector3.new(1, 1, 1),
+
+		Up = Enum.KeyCode.Unknown,
+		Down = Enum.KeyCode.Unknown,
+		Left = Enum.KeyCode.Unknown,
+		Right = Enum.KeyCode.Unknown,
+		Forward = Enum.KeyCode.Unknown,
+		Backward = Enum.KeyCode.Unknown,
+	}
+
+	if actionType == Enum.InputActionType.Bool then
+		spec.KeyCode = keyOr(config.KeyCode)
+		spec.UIButton = config.UIButton
+		return spec :: BindingSpec
+	end
+
+	if actionType == Enum.InputActionType.ViewportPosition then
+		spec.KeyCode = keyOr(config.KeyCode)
+		return spec :: BindingSpec
+	end
+
+	if actionType == Enum.InputActionType.Direction1D then
+		spec.KeyCode = keyOr(config.KeyCode)
+		spec.Scale = valueOr(config.Scale, 1)
+		applyD1(spec :: BindingSpec, config)
+		return spec :: BindingSpec
+	end
+
+	if actionType == Enum.InputActionType.Direction2D then
+		spec.KeyCode = keyOr(config.KeyCode)
+		spec.Vector2Scale = valueOr(config.Vector2Scale, Vector2.new(1, 1))
+		applyD2(spec :: BindingSpec, config)
+		return spec :: BindingSpec
+	end
+
+	if actionType == Enum.InputActionType.Direction3D then
+		spec.Vector3Scale = valueOr(config.Vector3Scale, Vector3.new(1, 1, 1))
+		applyD3(spec :: BindingSpec, config)
+		return spec :: BindingSpec
+	end
+
+	error(("Unsupported InputActionType: %s"):format(actionType.Name))
+end
+
+function BindingUtils.ApplySpec(binding: InputBinding, actionType: Enum.InputActionType, spec: BindingSpec)
+	binding.PrimaryModifier = spec.PrimaryModifier
+	binding.SecondaryModifier = spec.SecondaryModifier
+
+	if actionType == Enum.InputActionType.Bool then
+		binding.KeyCode = spec.KeyCode
+		if spec.UIButton then
+			binding.UIButton = spec.UIButton
+		end
 		return
 	end
 
-	self.running = true
-
-	RunService:BindToRenderStep(RENDER_NAME, RENDER_PRIORITY, function(delta: number)
-		self:Update(delta)
-	end)
-end
-
-function CameraSystem:Stop()
-	if not self.running then
+	if actionType == Enum.InputActionType.ViewportPosition then
+		binding.KeyCode = spec.KeyCode
 		return
 	end
-	self.running = false
 
-	RunService:UnbindFromRenderStep(RENDER_NAME)
+	if actionType == Enum.InputActionType.Direction1D then
+		binding.KeyCode = spec.KeyCode
+		binding.Scale = spec.Scale
+		binding.ClampMagnitudeToOne = spec.ClampMagnitudeToOne
+		binding.Up = spec.Up
+		binding.Down = spec.Down
+		return
+	end
+
+	if actionType == Enum.InputActionType.Direction2D then
+		binding.KeyCode = spec.KeyCode
+		binding.Vector2Scale = spec.Vector2Scale
+		binding.ClampMagnitudeToOne = spec.ClampMagnitudeToOne
+		binding.Up = spec.Up
+		binding.Down = spec.Down
+		binding.Left = spec.Left
+		binding.Right = spec.Right
+		return
+	end
+
+	if actionType == Enum.InputActionType.Direction3D then
+		binding.Vector3Scale = spec.Vector3Scale
+		binding.ClampMagnitudeToOne = spec.ClampMagnitudeToOne
+		binding.Up = spec.Up
+		binding.Down = spec.Down
+		binding.Left = spec.Left
+		binding.Right = spec.Right
+		binding.Forward = spec.Forward
+		binding.Backward = spec.Backward
+		return
+	end
+
+	error(`Unsupported InputActionType: {actionType.Name}`)
 end
 
-return CameraSystem.new()
+function BindingUtils.ApplyConfig(binding: InputBinding, actionType: Enum.InputActionType, config: BindingConfig)
+	local spec = BindingUtils.ConvertSpec(actionType, config)
+	BindingUtils.ApplySpec(binding, actionType, spec)
+end
+
+function BindingUtils.CreateBinding(actionType: Enum.InputActionType, config: BindingConfig): InputBinding
+	local binding = Instance.new("InputBinding")
+	BindingUtils.ApplyConfig(binding, actionType, config)
+	return binding
+end
+
+function BindingUtils.UpdateRecord(record: BindingRecord, actionType: Enum.InputActionType, config: BindingConfig)
+	local instance = record.Instance
+	if not instance then
+		instance = BindingUtils.CreateBinding(actionType, config)
+	end
+
+	local spec = BindingUtils.ConvertSpec(actionType, config)
+	BindingUtils.ApplySpec(instance, actionType, spec)
+
+	record.Spec = spec
+	record.Instance = instance
+end
+
+function BindingUtils.CreateRecord(actionType: Enum.InputActionType, config: BindingConfig): BindingRecord
+	local spec = BindingUtils.ConvertSpec(actionType, config)
+	local binding = BindingUtils.CreateBinding(actionType, config)
+	local record: BindingRecord = {
+		Instance = binding,
+		Spec = spec,
+	}
+	return record
+end
+
+return BindingUtils
+</file>
+
+<file path="src/core/InputService/Action/InputMapper/InputMapperContext.luau">
+local InputMapperAction = require(script.Parent.InputMapperAction)
+local InputMapperTypes = require(script.Parent.InputMapperTypes)
+
+local ContextUtils = {}
+
+type ContextConfig = InputMapperTypes.ContextConfig
+type ContextSpec = InputMapperTypes.ContextSpec
+type ContextRecord = InputMapperTypes.ContextRecord
+
+type ActionSpec = InputMapperTypes.ActionSpec
+type ActionRecord = InputMapperTypes.ActionRecord
+
+function ContextUtils.ConvertSpec(config: ContextConfig): ContextSpec
+	local actionsSpecs: { [string]: ActionSpec } = {}
+
+	if config.Actions then
+		for actionName, actionConfig in pairs(config.Actions) do
+			actionsSpecs[actionName] = InputMapperAction.ConvertSpec(actionConfig)
+		end
+	end
+
+	return {
+		Sink = if config.Sink ~= nil then config.Sink else false,
+		Enabled = if config.Enabled ~= nil then config.Enabled else true,
+		Priority = if config.Priority ~= nil then config.Priority else 0,
+		Actions = actionsSpecs,
+	}
+end
+
+function ContextUtils.ApplySpec(context: InputContext, spec: ContextSpec)
+	context.Sink = spec.Sink
+	context.Enabled = spec.Enabled
+	context.Priority = spec.Priority
+
+	for _, action in pairs(context:GetChildren()) do
+		if not spec.Actions[action.Name] then
+			action:Destroy()
+		end
+	end
+
+	for actionName, actionSpec in pairs(spec.Actions) do
+		local action = context:FindFirstChild(actionName)
+		if action then
+			InputMapperAction.ApplySpec(action, actionSpec)
+		else
+			action = InputMapperAction.CreateAction(actionSpec)
+			action.Name = actionName
+			action.Parent = context
+		end
+	end
+end
+
+function ContextUtils.ApplyConfig(context: InputContext, config: ContextConfig)
+	local spec = ContextUtils.ConvertSpec(config)
+	ContextUtils.ApplySpec(context, spec)
+end
+
+function ContextUtils.CreateContext(config: ContextConfig)
+	local context = Instance.new("InputContext")
+	ContextUtils.ApplyConfig(context, config)
+	return context
+end
+
+function ContextUtils.CreateRecordFromInstance(context: InputContext, spec: ContextSpec): ContextRecord
+	local actions: { [string]: ActionRecord } = {}
+
+	for actionName, actionSpec in pairs(spec.Actions) do
+		local actionInstance = context:FindFirstChild(actionName)
+		if actionInstance then
+			actions[actionName] = InputMapperAction.CreateRecordFromInstance(actionInstance :: InputAction, actionSpec)
+		else
+			local newAction = InputMapperAction.CreateAction({
+				Enabled = actionSpec.Enabled,
+				Type = actionSpec.Type,
+				Bindings = {},
+			})
+			newAction.Name = actionName
+			newAction.Parent = context
+			actions[actionName] = InputMapperAction.CreateRecordFromInstance(newAction, actionSpec)
+		end
+	end
+
+	return {
+		Spec = spec,
+		Instance = context,
+		Actions = actions,
+	}
+end
+
+function ContextUtils.CreateRecord(config: ContextConfig): ContextRecord
+	local spec = ContextUtils.ConvertSpec(config)
+	local context = ContextUtils.CreateContext(config)
+	return ContextUtils.CreateRecordFromInstance(context, spec)
+end
+
+function ContextUtils.UpdateRecord(record: ContextRecord, config: ContextConfig)
+	local instance = record.Instance
+	if not instance then
+		instance = ContextUtils.CreateContext(config)
+	end
+
+	local spec = ContextUtils.ConvertSpec(config)
+	ContextUtils.ApplySpec(instance, spec)
+
+	for actionName, actionRecord in pairs(record.Actions) do
+		if not spec.Actions[actionName] then
+			if actionRecord.Instance then
+				actionRecord.Instance:Destroy()
+			end
+			record.Actions[actionName] = nil
+		end
+	end
+
+	for actionName, actionSpec in pairs(spec.Actions) do
+		local actionInstance = instance:FindFirstChild(actionName)
+		local actionRecord = record.Actions[actionName]
+
+		if actionRecord then
+			InputMapperAction.UpdateRecord(actionRecord, {
+				Enabled = actionSpec.Enabled,
+				Type = actionSpec.Type,
+				Bindings = {},
+			})
+			actionRecord.Instance = actionInstance :: InputAction?
+			actionRecord.Spec = actionSpec
+		else
+			if actionInstance then
+				record.Actions[actionName] =
+					InputMapperAction.CreateRecordFromInstance(actionInstance :: InputAction, actionSpec)
+			else
+				local newAction = InputMapperAction.CreateAction({
+					Enabled = actionSpec.Enabled,
+					Type = actionSpec.Type,
+					Bindings = {},
+				})
+				newAction.Name = actionName
+				newAction.Parent = instance
+				record.Actions[actionName] = InputMapperAction.CreateRecordFromInstance(newAction, actionSpec)
+			end
+		end
+	end
+
+	record.Instance = instance
+	record.Spec = spec
+end
+
+return ContextUtils
+</file>
+
+<file path="src/core/InputService/Action/InputMapper/InputMapperTypes.luau">
+-- * Config
+export type Config = {
+	Parent: Instance?,
+	ContainerName: string?,
+	Contexts: { [string]: ContextConfig }?,
+}
+
+-- * Contexts
+export type ContextConfig = {
+	Sink: boolean?,
+	Enabled: boolean?,
+	Priority: number?,
+	Actions: { [string]: ActionConfig }?,
+}
+
+export type ContextSpec = {
+	Sink: boolean,
+	Enabled: boolean,
+	Priority: number,
+	Actions: { [string]: ActionSpec },
+}
+
+export type ContextRecord = {
+	Spec: ContextSpec,
+	Instance: InputContext,
+	Actions: { [string]: ActionRecord },
+}
+
+-- * Actions
+export type ActionConfig = {
+	Enabled: boolean?,
+	Type: Enum.InputActionType, --! required
+	Bindings: { [string]: BindingConfig }?,
+}
+
+export type ActionSpec = {
+	Enabled: boolean,
+	Type: Enum.InputActionType,
+	Bindings: { [string]: BindingSpec },
+}
+
+export type ActionRecord = {
+	Spec: ActionSpec,
+	Instance: InputAction,
+	Bindings: { [string]: BindingRecord },
+}
+
+-- * Bindings
+export type BindingConfig = {
+	PrimaryModifier: Enum.KeyCode?,
+	SecondaryModifier: Enum.KeyCode?,
+
+	KeyCode: Enum.KeyCode?,
+	UIButton: GuiButton?,
+
+	ClampMagnitudeToOne: boolean?,
+	Scale: number?,
+	Vector2Scale: Vector2?,
+	Vector3Scale: Vector3?,
+
+	Up: Enum.KeyCode?,
+	Down: Enum.KeyCode?,
+	Left: Enum.KeyCode?,
+	Right: Enum.KeyCode?,
+	Forward: Enum.KeyCode?,
+	Backward: Enum.KeyCode?,
+}
+
+export type BindingSpec = {
+	PrimaryModifier: Enum.KeyCode,
+	SecondaryModifier: Enum.KeyCode,
+
+	KeyCode: Enum.KeyCode,
+	UIButton: GuiButton,
+
+	ClampMagnitudeToOne: boolean,
+	Scale: number,
+	Vector2Scale: Vector2,
+	Vector3Scale: Vector3,
+
+	Up: Enum.KeyCode,
+	Down: Enum.KeyCode,
+	Left: Enum.KeyCode,
+	Right: Enum.KeyCode,
+	Forward: Enum.KeyCode,
+	Backward: Enum.KeyCode,
+}
+
+export type BindingRecord = {
+	Spec: BindingSpec,
+	Instance: InputBinding,
+}
+
+return {}
 </file>
 
 </files>

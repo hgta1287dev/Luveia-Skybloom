@@ -16,11 +16,110 @@
         },
         "Core": {
           "$className": "Folder",
+          "CineCam": {
+            "$className": "Folder",
+            "Config": {
+              "$className": "Folder",
+              "CameraTypes": {
+                "$path": "src/core/CineCam/Config/CameraTypes.luau"
+              }
+            },
+            "Context": {
+              "$className": "Folder",
+              "CameraContext": {
+                "$path": "src/core/CineCam/Context/CameraContext.luau"
+              },
+              "CameraState": {
+                "$path": "src/core/CineCam/Context/CameraState.luau"
+              }
+            },
+            "Core": {
+              "$className": "Folder",
+              "CameraBrain": {
+                "$path": "src/core/CineCam/Core/CameraBrain.luau"
+              }
+            },
+            "Output": {
+              "$className": "Folder",
+              "CameraOutput": {
+                "$path": "src/core/CineCam/Output/CameraOutput.luau"
+              },
+              "CameraResult": {
+                "$path": "src/core/CineCam/Output/CameraResult.luau"
+              }
+            },
+            "Pipe": {
+              "$className": "Folder",
+              "Modules": {
+                "$className": "Folder",
+                "Aim": {
+                  "$className": "Folder",
+                  "CameraLookAtModule": {
+                    "$path": "src/core/CineCam/Pipe/Modules/Aim/CameraLookAtModule.luau"
+                  }
+                },
+                "Body": {
+                  "$className": "Folder",
+                  "CameraFollowModule": {
+                    "$path": "src/core/CineCam/Pipe/Modules/Body/CameraFollowModule.luau"
+                  },
+                  "CameraOrbitModule": {
+                    "$path": "src/core/CineCam/Pipe/Modules/Body/CameraOrbitModule.luau"
+                  }
+                },
+                "Extensions": {
+                  "$className": "Folder",
+                  "CameraTargetObjectModule": {
+                    "$path": "src/core/CineCam/Pipe/Modules/Extensions/CameraTargetObjectModule.luau"
+                  }
+                },
+                "Noise": {
+                  "$className": "Folder",
+                  "CameraOffsetModule": {
+                    "$path": "src/core/CineCam/Pipe/Modules/Noise/CameraOffsetModule.luau"
+                  }
+                }
+              },
+              "Pipeline": {
+                "$path": "src/core/CineCam/Pipe/Pipeline.luau"
+              }
+            },
+            "Utilities": {
+              "$className": "Folder",
+              "CameraAxisState": {
+                "$path": "src/core/CineCam/Utilities/CameraAxisState.luau"
+              },
+              "CameraUtils": {
+                "$path": "src/core/CineCam/Utilities/CameraUtils.luau"
+              }
+            },
+            "VirtualCameras": {
+              "$className": "Folder",
+              "BaseVCam": {
+                "$path": "src/core/CineCam/VirtualCameras/BaseVCam.luau"
+              },
+              "OrbitVCam": {
+                "$path": "src/core/CineCam/VirtualCameras/OrbitVCam.luau"
+              }
+            },
+            "_note": {
+              "$path": "src/core/CineCam/_note.luau"
+            }
+          },
           "DevPanel": {
             "$path": "src/core/DevPanel"
           },
           "HoenKnit": {
             "$path": "src/core/HoenKnit"
+          },
+          "InputService": {
+            "$path": "src/core/InputService",
+            "Raw": {
+              "$className": "Folder",
+              "MouseInput": {
+                "$path": "src/core/InputService/Raw/MouseInput.luau"
+              }
+            }
           },
           "LoggerManager": {
             "$path": "src/core/LoggerManager"
