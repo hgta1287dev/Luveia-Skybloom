@@ -14,21 +14,12 @@ OrbitVCam.__index = OrbitVCam
 -- * Types
 type CameraContext = CameraContext.CameraContext
 
--- * Helpers
-local function GetTestPart()
-	local part = Instance.new("Part")
-	part.Anchored = true
-	part.Size = Vector3.one * 2
-	part.Parent = workspace
-	return part
-end
-
 -- * Constructor
 function OrbitVCam.new()
 	local orbitModule = CameraOrbitModule.new()
 	local lookAtModule = CameraLookAtModule.new()
 	local offsetModule = CameraOffsetModule.new()
-	local objectTargetModule = CameraTargetObjectModule.new(nil, GetTestPart())
+	local objectTargetModule = CameraTargetObjectModule.new()
 
 	orbitModule.Yaw.SmoothFactor = 4
 	orbitModule.Pitch.SmoothFactor = 5
@@ -82,6 +73,14 @@ function OrbitVCam.new()
 		orbitModule.Yaw:AdjustTarget(self.direction.X)
 		orbitModule.Pitch:AdjustTarget(self.direction.Y)
 		orbitModule.Distance:AdjustTarget(-self.zoomDis)
+	end
+
+	function self:GetObjectTargetModule()
+		return objectTargetModule
+	end
+
+	function self:GetOrbitModule()
+		return orbitModule
 	end
 
 	return self

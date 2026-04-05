@@ -33,8 +33,8 @@ local MapService = HoenKnit.CreateService({
 	_currentModulesManager = nil :: any,
 	_pendingModulesManager = nil :: any,
 
-	_playersAtTransition = OrderedSet.new() :: OrderedSet.OrderedSet<Player>,
-	_finishedPlayers = OrderedSet.new() :: OrderedSet.OrderedSet<Player>,
+	_playersAtTrans = OrderedSet.new() :: OrderedSet.OrderedSet<Player>,
+	_playersFinishedTrans = OrderedSet.new() :: OrderedSet.OrderedSet<Player>,
 
 	_currentTransitionId = 0,
 })
@@ -67,6 +67,8 @@ function MapService:_completeTransition(transitionId)
 		return
 	end
 
+	Logger:Info("Gameplay", `Map transition completed!`)
+
 	task.delay(TRANISTION_FINISHED_DELAY, function()
 		if transitionId ~= self._currentTransitionId then
 			return
@@ -81,14 +83,15 @@ function MapService:_onTransitionFinished(player: Player, transitionId: number)
 		return
 	end
 
-	if not self._playersAtTransition:Has(player) then
+	if not self._playersAtTrans:Has(player) then
 		return
 	end
 
-	if self._finishedPlayers:PushBack(player) then
-		if self._finishedPlayers:Size() >= self._playersAtTransition:Size() then
-			self:_completeTransition(transitionId)
-		end
+	self._playersAtTrans:Pop(player)
+	self._playersFinishedTrans:PushBack(player)
+
+	if self._playersAtTrans:Empty() then
+		self:_completeTransition(transitionId)
 	end
 end
 
@@ -100,12 +103,12 @@ function MapService:CreateMap(mode: Mode, mapName: string, timeout: number?)
 	local transitionId = self._currentTransitionId
 
 	-- Reset state
-	self._playersAtTransition:Clear()
-	self._finishedPlayers:Clear()
+	self._playersAtTrans:Clear()
+	self._playersFinishedTrans:Clear()
 
 	-- Snapshot current players
 	for _, player in Players:GetPlayers() do
-		self._playersAtTransition:PushBack(player)
+		self._playersAtTrans:PushBack(player)
 	end
 
 	-- Load map
@@ -141,18 +144,19 @@ function MapService:CreateMap(mode: Mode, mapName: string, timeout: number?)
 
 	Logger:Info("Gameplay", "Map Created!")
 
+	-- If no players at all
+	if self._playersAtTrans:Empty() then
+		self:_completeTransition(transitionId)
+	end
+
 	-- Timeout fallback
 	task.delay(TRANISTION_TIMEOUT, function()
-		if transitionId == self._currentTransitionId then
+		if transitionId == self._currentTransitionId and self._playersAtTrans:Size() > 0 then
+			Logger:Warn("Gameplay", `Is all player at transition = {self._playersAtTrans:Size()}`)
 			Logger:Warn("Gameplay", `Transition timeout. Forcing complete.`)
 			self:_completeTransition(transitionId)
 		end
 	end)
-
-	-- If no players at all
-	if self._playersAtTransition:Empty() then
-		self:_completeTransition(transitionId)
-	end
 end
 
 function MapService:GetCurrentMap(): Instance?
@@ -170,7 +174,7 @@ end
 
 function MapService:KnitStart()
 	Players.PlayerRemoving:Connect(function(player)
-		if self._playersAtTransition:Has(player) then
+		if self._playersAtTrans:Has(player) then
 			self:_onTransitionFinished(player, self._currentTransitionId)
 		end
 	end)

@@ -20,7 +20,7 @@ local SERVICES = {
 	"TestService",
 }
 local CONTROLLERS = {
-	-- "CameraService", --! Have problems with this one
+	"CameraService",
 	"LightingService",
 	"TestService",
 }

@@ -1,6 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local CameraRemote = require(script.Parent.CameraRemote)
+local CameraSystem = require(script.Parent.CameraSystem)
 local Promise = require(ReplicatedStorage.Packages.Promise)
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local HoenKnit = require(ReplicatedStorage.Shared.Core.HoenKnit)
@@ -44,7 +44,8 @@ end
 
 -- * Public
 function CameraController:MoveCameraTo(cameraPivot: BasePart)
-	CameraRemote:SetHost(cameraPivot)
+	print("Moving camera to", cameraPivot.Name)
+	CameraSystem:GetContext().CameraState.LookAtObject = cameraPivot
 end
 
 function CameraController:MoveCameraToCurrentMap()
@@ -61,6 +62,7 @@ end
 function CameraController:KnitStart()
 	local MapController = Knit.GetController("MapController")
 
+	CameraSystem:Init()
 	self:MoveCameraToCurrentMap()
 	MapController.MapUpdated:Connect(function(mapName: string, transitionId: number)
 		Logger:Info(`Camera updating to map {mapName}`)

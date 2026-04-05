@@ -10,10 +10,13 @@ local Logger = LoggerManager:CreateLogger("Bootstrap", "System")
 Logger:Info(`Booting Up Game!`)
 DevPanel:Init()
 
-warn("Boot")
-ServiceLoader:Init()
-warn("Boot")
+local success, err = pcall(function(...)
+	ServiceLoader:Init()
+	KnitBootstrap:Init()
+end)
 
-KnitBootstrap:Init()
-
-Logger:Info(`Game Booted Successfully!`)
+if success then
+	Logger:Info(`Game Booted Successfully!`)
+else
+	Logger:Fatal(`GANE BOOT FAILED!: {err}`)
+end

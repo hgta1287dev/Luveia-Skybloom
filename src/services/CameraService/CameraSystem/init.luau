@@ -13,6 +13,9 @@ local RENDER_PRIORITY = Enum.RenderPriority.Camera.Value
 function CameraSystem.new()
 	local context = CameraContext.new()
 	local self = setmetatable({
+		vcams = {
+			Orbit = OrbitVCam.new(),
+		},
 		brain = CameraBrain.new(),
 		context = context,
 	}, CameraSystem)
@@ -27,8 +30,12 @@ function CameraSystem:Update(dt: number)
 end
 
 function CameraSystem:Init()
-	self.brain:SetActiveVCam(OrbitVCam.new())
+	self.brain:SetActiveVCam(self.vcams.Orbit)
 	self:Start()
+end
+
+function CameraSystem:GetContext()
+	return self.context
 end
 
 function CameraSystem:Start()

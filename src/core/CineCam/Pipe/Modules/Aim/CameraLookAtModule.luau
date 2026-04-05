@@ -8,7 +8,14 @@ end
 
 function LookAtModule:Update(context, result)
 	local camPos = result.Body.Position
-	result.Aim = CFrame.lookAt(camPos, context.CameraState.LookAtTarget)
+	local object = context.CameraState.LookAtObject
+
+	local objectPos = object and object:GetPivot().Position
+	local lookAt = CFrame.lookAt(camPos, objectPos or context.CameraState.LookAtTarget)
+
+	local angleCf = CFrame.fromEulerAnglesXYZ(lookAt:ToEulerAnglesXYZ())
+
+	result.Aim = angleCf
 end
 
 return LookAtModule
