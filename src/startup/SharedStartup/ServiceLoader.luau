@@ -5,7 +5,14 @@ local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
 
 local Logger = LoggerManager:CreateLogger(script.Name, "System")
 
---  * Config
+--  * TESTING *
+local TEST_CONTROLLERS = {
+	"CloudLayerService",
+}
+
+local TEST_SERVICES = {}
+
+-- * MAIN *
 local SHARED = {
 	"DevLogService",
 	-- "CameraProxyService",
@@ -67,21 +74,33 @@ end
 function ServiceLoader:Init()
 	Logger:Debug("System", "Initialization Started!")
 
-	if RunService:IsServer() then
-		for _, name in ipairs(SERVICES) do
-			LoadService(name)
+	if next(TEST_CONTROLLERS) or next(TEST_SERVICES) then
+		if RunService:IsServer() then
+			for _, name in ipairs(TEST_SERVICES) do
+				LoadService(name)
+			end
+		else
+			for _, name in ipairs(TEST_CONTROLLERS) do
+				LoadController(name)
+			end
 		end
 	else
-		for _, name in ipairs(CONTROLLERS) do
-			LoadController(name)
+		if RunService:IsServer() then
+			for _, name in ipairs(SERVICES) do
+				LoadService(name)
+			end
+		else
+			for _, name in ipairs(CONTROLLERS) do
+				LoadController(name)
+			end
 		end
-	end
 
-	for _, name in ipairs(SHARED) do
-		if not ServiceLoader.services[name] and RunService:IsServer() then
-			LoadService(name)
-		elseif not ServiceLoader.controllers[name] and RunService:IsClient() then
-			LoadController(name)
+		for _, name in ipairs(SHARED) do
+			if not ServiceLoader.services[name] and RunService:IsServer() then
+				LoadService(name)
+			elseif not ServiceLoader.controllers[name] and RunService:IsClient() then
+				LoadController(name)
+			end
 		end
 	end
 

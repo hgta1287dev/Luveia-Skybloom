@@ -32,7 +32,7 @@ The content is organized as follows:
 <notes>
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Only files matching these patterns are included: src/core/CineCam/VirtualCameras/OrbitVCam.luau, src/services/CameraService, src/core/CineCam/Pipe/Modules/Extensions/CameraTargetObjectModule.luau, src/core/CineCam/VirtualCameras/BaseVCam.luau
+- Only files matching these patterns are included: src/core/Sound
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
 - Files are sorted by Git change count (files with more changes are at the bottom)
@@ -41,350 +41,272 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
-src/core/CineCam/Pipe/Modules/Extensions/CameraTargetObjectModule.luau
-src/core/CineCam/VirtualCameras/BaseVCam.luau
-src/core/CineCam/VirtualCameras/OrbitVCam.luau
-src/services/CameraService/CameraSystem/init.luau
-src/services/CameraService/Client.luau
+src/core/Sound/SongSystem/init.luau
+src/core/Sound/SoundController/Channels/BaseSoundChannel.luau
+src/core/Sound/SoundController/Channels/MusicChannel.luau
+src/core/Sound/SoundController/Channels/SFXChannel.luau
+src/core/Sound/SoundController/init.luau
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
 
-<file path="src/core/CineCam/Pipe/Modules/Extensions/CameraTargetObjectModule.luau">
-local TargetModule = {}
-TargetModule.__index = TargetModule
+<file path="src/core/Sound/SongSystem/init.luau">
+local SoundController = require(script.Parent.SoundController)
 
-local function posObjOr(obj: BasePart?, default: Vector3)
-	if obj and obj:IsA("BasePart") then
-		return obj.Position
-	end
-	return default
-end
+local SongSystem = {}
+SongSystem.__index = SongSystem
 
-function TargetModule.new(trackingObj: BasePart?, lookAtObj: BasePart?, overwrite: boolean?)
-	local self = setmetatable({}, TargetModule)
-	self.TrackingObject = trackingObj
-	self.LookAtObject = lookAtObj
-	self.Overwrite = overwrite or false
+function SongSystem.new()
+	local self = setmetatable({}, SongSystem)
+
+	self.sound = SoundController
+	self.current = nil
+	self.next = nil
+
 	return self
 end
 
--- setting target runtime
-function TargetModule:SetTargets(trackingObj: BasePart?, lookAtObj: BasePart?, overwrite: boolean?)
-	self.TrackingObject = trackingObj
-	self.LookAtObject = lookAtObj
-	if overwrite ~= nil then
-		self.Overwrite = overwrite
+function SongSystem:Play(trackName)
+	if self.current then
+		self.sound.channels.Music:SetVolume(trackName, 0)
 	end
+
+	self.sound:Play("Music", trackName)
+	self.current = trackName
 end
 
--- update camera state
-function TargetModule:Update(context, result)
-	local cameraState = context.CameraState
-
-	if self.Overwrite or cameraState.TrackingObject == nil then
-		cameraState.TrackingObject = self.TrackingObject
-	end
-
-	if self.Overwrite or cameraState.LookAtObject == nil then
-		cameraState.LookAtObject = self.LookAtObject
-	end
-
-	cameraState.TrackingTarget = posObjOr(cameraState.TrackingObject, cameraState.TrackingTarget)
-	cameraState.LookAtTarget = posObjOr(cameraState.LookAtObject, cameraState.LookAtTarget)
-end
-
-return TargetModule
+return SongSystem.new()
 </file>
 
-<file path="src/core/CineCam/VirtualCameras/BaseVCam.luau">
-local CameraResult = require(script.Parent.Parent.Output.CameraResult)
-local CameraPipeline = require(script.Parent.Parent.Pipe.Pipeline)
-
-local BaseVirtualCamera = {}
-BaseVirtualCamera.__index = BaseVirtualCamera
-
-function BaseVirtualCamera.new(modules)
-	local self = setmetatable({}, BaseVirtualCamera)
-	self.Pipeline = CameraPipeline.new(modules or {})
-	self.Result = CameraResult.new()
-	return self
-end
-
-function BaseVirtualCamera:Update(context)
-	self.Pipeline:Run(context, self.Result)
-	return self.Result
-end
-
-return BaseVirtualCamera
-</file>
-
-<file path="src/services/CameraService/CameraSystem/init.luau">
+<file path="src/core/Sound/SoundController/Channels/BaseSoundChannel.luau">
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local CameraContext = require(ReplicatedStorage.Shared.Core.CineCam.Context.CameraContext)
-local CameraBrain = require(ReplicatedStorage.Shared.Core.CineCam.Core.CameraBrain)
-local OrbitVCam = require(ReplicatedStorage.Shared.Core.CineCam.VirtualCameras.OrbitVCam)
-local CameraSystem = {}
-CameraSystem.__index = CameraSystem
-
-local MAX_DELTA_TIME = 1 / 30 -- 30 hz
-local RENDER_NAME = "CameraSystemRender"
-local RENDER_PRIORITY = Enum.RenderPriority.Camera.Value
-
-function CameraSystem.new()
-	local context = CameraContext.new()
-	local self = setmetatable({
-		vcams = {
-			Orbit = OrbitVCam.new(),
-		},
-		brain = CameraBrain.new(),
-		context = context,
-	}, CameraSystem)
-
-	return self
-end
-
-function CameraSystem:Update(dt: number)
-	dt = math.min(dt, MAX_DELTA_TIME)
-	self.context.DeltaTime = dt
-	self.brain:Update(self.context)
-end
-
-function CameraSystem:Init()
-	self.brain:SetActiveVCam(self.vcams.Orbit)
-	self:Start()
-end
-
-function CameraSystem:GetContext()
-	return self.context
-end
-
-function CameraSystem:Start()
-	if self.running then
-		return
-	end
-
-	self.running = true
-
-	RunService:BindToRenderStep(RENDER_NAME, RENDER_PRIORITY, function(delta: number)
-		self:Update(delta)
-	end)
-end
-
-function CameraSystem:Stop()
-	if not self.running then
-		return
-	end
-	self.running = false
-
-	RunService:UnbindFromRenderStep(RENDER_NAME)
-end
-
-return CameraSystem.new()
-</file>
-
-<file path="src/core/CineCam/VirtualCameras/OrbitVCam.luau">
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local InputService = require(ReplicatedStorage.Shared.Core.InputService)
-local CameraContext = require(script.Parent.Parent.Context.CameraContext)
-local CameraLookAtModule = require(script.Parent.Parent.Pipe.Modules.Aim.CameraLookAtModule)
-local CameraOffsetModule = require(script.Parent.Parent.Pipe.Modules.Noise.CameraOffsetModule)
-local CameraOrbitModule = require(script.Parent.Parent.Pipe.Modules.Body.CameraOrbitModule)
-local BaseVirtualCamera = require(script.Parent.Parent.VirtualCameras.BaseVCam)
-local CameraTargetObjectModule = require(script.Parent.Parent.Pipe.Modules.Extensions.CameraTargetObjectModule)
-
--- * Orbit
-local OrbitVCam = {}
-OrbitVCam.__index = OrbitVCam
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
+local TweenUtils = require(ReplicatedStorage.Shared.Utils.TweenUtils)
+local SoundChannel = {}
+SoundChannel.__index = SoundChannel
 
 -- * Types
-type CameraContext = CameraContext.CameraContext
+type TweenInfoOption = TweenUtils.TweenInfoOption
+export type SoundChannel = typeof(setmetatable(
+	{} :: {
+		group: SoundGroup,
+		sounds: { [string]: Sound },
+	},
+	SoundChannel
+))
 
 -- * Constructor
-function OrbitVCam.new()
-	local orbitModule = CameraOrbitModule.new()
-	local lookAtModule = CameraLookAtModule.new()
-	local offsetModule = CameraOffsetModule.new()
-	local objectTargetModule = CameraTargetObjectModule.new()
+function SoundChannel.new()
+	local self = setmetatable({
+		group = Instance.new("SoundGroup"),
+		sounds = {},
+	}, SoundChannel)
 
-	orbitModule.Yaw.SmoothFactor = 4
-	orbitModule.Pitch.SmoothFactor = 5
-	orbitModule.Distance.SmoothFactor = 6
-
-	local self = setmetatable(
-		BaseVirtualCamera.new({
-			objectTargetModule,
-			orbitModule,
-			lookAtModule,
-			offsetModule,
-		}),
-		OrbitVCam
-	)
-
-	self.direction = Vector2.zero
-	self.zoomDis = 0
-
-	local mapper = InputService:GetActionMapper()
-	local mouseDevice = InputService:GetMouseDevice()
-
-	local look: InputAction = mapper:GetAction("Gameplay", "Look")
-	local lookDelta: InputAction = mapper:GetAction("Gameplay", "LookDelta")
-	local zoomDis: InputAction = mapper:GetAction("Gameplay", "ZoomDistance")
-	local zoomDisDelta: InputAction = mapper:GetAction("Gameplay", "ZoomDistanceDelta")
-
-	lookDelta.StateChanged:Connect(function(delta: Vector2)
-		orbitModule.Yaw:AdjustTarget(delta.X)
-		orbitModule.Pitch:AdjustTarget(delta.Y)
-	end)
-
-	zoomDisDelta.StateChanged:Connect(function(distance: number)
-		orbitModule.Distance:AdjustTarget(-distance)
-	end)
-
-	look.StateChanged:Connect(function(direction: Vector2)
-		self.direction = direction * Vector2.new(1, -1)
-	end)
-
-	zoomDis.StateChanged:Connect(function(distance: number)
-		self.zoomDis = distance
-	end)
-
-	function self:_onUpdate()
-		if mouseDevice:IsButtonDown(Enum.UserInputType.MouseButton2) then
-			local delta = -mouseDevice:GetMoveDelta()
-			orbitModule.Yaw:AdjustTarget(delta.X)
-			orbitModule.Pitch:AdjustTarget(delta.Y)
-		end
-
-		orbitModule.Yaw:AdjustTarget(self.direction.X)
-		orbitModule.Pitch:AdjustTarget(self.direction.Y)
-		orbitModule.Distance:AdjustTarget(-self.zoomDis)
-	end
-
-	function self:GetObjectTargetModule()
-		return objectTargetModule
-	end
-
-	function self:GetOrbitModule()
-		return orbitModule
-	end
+	self:Init()
 
 	return self
 end
 
--- * Methods
-function OrbitVCam:Update(context: CameraContext, output)
-	self:_onUpdate()
-
-	-- ouput
-	local result = BaseVirtualCamera.Update(self, context)
-	output.Cframe = result.Body * result.Aim * result.Noise
-	output.Fov = result.Fov
+function SoundChannel:Init()
+	self.group.Parent = SoundService
 end
 
-return OrbitVCam
+-- * Getters
+function SoundChannel:FindSound(name: string): Sound?
+	return self.sounds[name]
+end
+
+function SoundChannel:GetSound(name: string): Sound?
+	local sound = self:FindSound(name)
+	if not sound then
+		warn(`Sound {name} not found in channel`)
+	end
+	return sound
+end
+
+function SoundChannel:RequireSound(name: string): Sound
+	local sound = self:FindSound(name)
+	if not sound then
+		error(`Sound {name} not found in channel`)
+	end
+	return sound
+end
+
+-- * Setters
+function SoundChannel:AddSound(name: string, sound: Sound)
+	if self.sounds[name] then
+		warn(`Sound {name} already exists in channel, overwriting`)
+	end
+	self.sounds[name] = sound
+	sound.Parent = self.group
+	sound.SoundGroup = self.group
+end
+
+function SoundChannel:AddSounds(sounds: { [string]: Sound })
+	for name, sound in pairs(sounds) do
+		self:AddSound(name, sound)
+	end
+end
+
+function SoundChannel:AddSoundFromContainer(parent: Instance, defineFilter: (Instance) -> string?)
+	for _, sound: Sound in pairs(parent:QueryDescendants("Sound")) do
+		if defineFilter then
+			local newName = defineFilter(sound)
+			if newName then
+				self:AddSound(newName or sound.Name, sound)
+			end
+		else
+			self:AddSound(sound.Name, sound)
+		end
+	end
+end
+
+-- * Settings
+function SoundChannel:SetSoundVolume(name: string, volume: number, info: TweenInfoOption?): Tween
+	local sound = self:RequireSound(name)
+	local tweenInfo = TweenUtils.createInfo(info)
+	local tween = TweenService:Create(sound, tweenInfo, { Volume = volume })
+	tween:Play()
+	return tween
+end
+
+function SoundChannel:SetChannelVolume(volume: number, info: TweenInfoOption?)
+	local tweenInfo = TweenUtils.createInfo(info)
+	local tween = TweenService:Create(self.group, tweenInfo, {
+		Volume = volume,
+	})
+	tween:Play()
+	return tween
+end
+
+-- * Main
+function SoundChannel:Play(name: string)
+	local sound = self:RequireSound(name)
+	sound:Play()
+end
+
+function SoundChannel:Stop(name: string)
+	local sound = self:RequireSound(name)
+	sound:Stop()
+end
+
+function SoundChannel:StopAll()
+	for _, sound in pairs(self.sounds) do
+		sound:Stop()
+	end
+end
+
+function SoundChannel:Pause(name: string)
+	local sound = self:RequireSound(name)
+	sound:Pause()
+end
+
+function SoundChannel:Resume(name: string)
+	local sound = self:RequireSound(name)
+	sound:Resume()
+end
+
+return SoundChannel
 </file>
 
-<file path="src/services/CameraService/Client.luau">
+<file path="src/core/Sound/SoundController/Channels/MusicChannel.luau">
+local BaseSoundChannel = require(script.Parent.BaseSoundChannel)
+
+local MusicChannel = setmetatable({}, BaseSoundChannel)
+
+-- * Types
+export type MusicChannel = typeof(setmetatable(
+	{} :: {
+		sounds: { [string]: Sound },
+		group: SoundGroup,
+	},
+	MusicChannel
+))
+
+-- * Constructor
+function MusicChannel.new(): MusicChannel
+	local self = setmetatable(BaseSoundChannel.new(), MusicChannel)
+	return self
+end
+
+return MusicChannel
+</file>
+
+<file path="src/core/Sound/SoundController/Channels/SFXChannel.luau">
+local BaseSoundChannel = require(script.Parent.BaseSoundChannel)
+
+local SFXChannel = setmetatable({}, BaseSoundChannel)
+
+-- * Types
+export type SFXChannel = typeof(setmetatable({} :: {}, SFXChannel))
+
+-- * Constructor
+function SFXChannel.new(): SFXChannel
+	local self = setmetatable(BaseSoundChannel.new(), SFXChannel)
+	return self
+end
+
+-- * Transition
+
+return SFXChannel
+</file>
+
+<file path="src/core/Sound/SoundController/init.luau">
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenUtils = require(ReplicatedStorage.Shared.Utils.TweenUtils)
+local MusicChannel = require(script.Channels.MusicChannel)
+local SFXChannel = require(script.Channels.SFXChannel)
+local SoundController = {}
+SoundController.__index = SoundController
 
-local CameraSystem = require(script.Parent.CameraSystem)
-local Promise = require(ReplicatedStorage.Packages.Promise)
-local Knit = require(ReplicatedStorage.Packages.Knit)
-local HoenKnit = require(ReplicatedStorage.Shared.Core.HoenKnit)
+-- * Types
+type TweenInfoOption = TweenUtils.TweenInfoOption
+export type ChannelName = "Music" | "SFX"
+export type SoundController = typeof(setmetatable(
+	{} :: {
+		masterVolume: number,
+		channels: {
+			Music: MusicChannel.MusicChannel,
+			SFX: SFXChannel.SFXChannel,
+		},
+	},
+	SoundController
+))
 
-local CameraController = HoenKnit.CreateController({
-	Name = "CameraController",
-	_currentTransitionPromise = nil,
-})
-local Logger = CameraController._logger
-Logger:SetDefaultCategory("Gameplay")
-
--- * Private
-function CameraController:_cancelCurrent()
-	if self._currentTransitionPromise then
-		self._currentTransitionPromise:cancel()
-		self._currentTransitionPromise = nil
-	end
+-- * Constructor
+function SoundController.new(): SoundController
+	local self = setmetatable({
+		masterVolume = 1,
+		channels = {
+			Music = MusicChannel.new(),
+			SFX = SFXChannel.new(),
+		},
+	}, SoundController)
+	return self
 end
 
-function CameraController:_playTransition()
-	return Promise.new(function(resolve, reject, onCancel)
-		local cancelled = false
+-- * Setters
+function SoundController:SetVolume(volume: number, info: TweenInfoOption)
+	self.masterVolume = volume
 
-		onCancel(function()
-			cancelled = true
-			reject("Cancelled")
-		end)
-
-		-- TODO: fade out, blur, etc.
-		task.spawn(function()
-			if cancelled then
-				return
-			end
-
-			self:MoveCameraToCurrentMap()
-
-			resolve()
-		end)
-	end)
+	self.channels.Music:SetChannelVolume(volume, info)
+	self.channels.SFX:SetChannelVolume(volume, info)
 end
 
--- * Public
-function CameraController:MoveCameraTo(cameraPivot: BasePart)
-	print("Moving camera to", cameraPivot.Name)
-	CameraSystem:GetContext().CameraState.LookAtObject = cameraPivot
+-- * Main API
+function SoundController:Play(channelName: string, soundName: string)
+	local channel = self.channels[channelName]
+	channel:Play(soundName)
 end
 
-function CameraController:MoveCameraToCurrentMap()
-	local MapController = Knit.GetController("MapController")
-	local map = MapController:GetCurrentMap()
-	if not map then
-		return
-	end
-
-	self:MoveCameraTo(map.CameraPivot)
+function SoundController:Stop(channelName: string, soundName: string)
+	local channel = self.channels[channelName]
+	channel:Stop(soundName)
 end
 
--- * Knit
-function CameraController:KnitStart()
-	local MapController = Knit.GetController("MapController")
-
-	CameraSystem:Init()
-	self:MoveCameraToCurrentMap()
-	MapController.MapUpdated:Connect(function(mapName: string, transitionId: number)
-		Logger:Info(`Camera updating to map {mapName}`)
-
-		self:_cancelCurrent()
-
-		local promise = self:_playTransition()
-		self._currentTransitionPromise = promise
-
-		promise
-			:andThen(function()
-				if self._currentTransitionPromise ~= promise then
-					return
-				end
-
-				MapController.TransitionReady:Fire(transitionId)
-			end)
-			:catch(function(err)
-				if err ~= "Cancelled" then
-					Logger:Error("Error while playing transition: " .. err)
-					MapController.TransitionReady:Fire(transitionId)
-				end
-			end)
-			:finally(function()
-				if self._currentTransitionPromise == promise then
-					self._currentTransitionPromise = nil
-				end
-			end)
-	end)
-end
-
-return CameraController
+return SoundController.new()
 </file>
 
 </files>

@@ -123,6 +123,15 @@
           },
           "LoggerManager": {
             "$path": "src/core/LoggerManager"
+          },
+          "Sound": {
+            "$className": "Folder",
+            "SongSystem": {
+              "$path": "src/core/Sound/SongSystem"
+            },
+            "SoundController": {
+              "$path": "src/core/Sound/SoundController"
+            }
           }
         },
         "Ecs": {
@@ -209,6 +218,12 @@
             "$className": "Folder",
             "CharacterServiceClient": {
               "$path": "src/services/CharacterService/Client.luau"
+            }
+          },
+          "CloudLayerService": {
+            "$className": "Folder",
+            "CloudLayerServiceClient": {
+              "$path": "src/services/CloudLayerService/Client.luau"
             }
           },
           "DevLogService": {
@@ -309,6 +324,9 @@
           "$className": "Folder",
           "CframeBuffer": {
             "$path": "src/utils/CframeBuffer.luau"
+          },
+          "TweenUtils": {
+            "$path": "src/utils/TweenUtils.luau"
           }
         }
       },

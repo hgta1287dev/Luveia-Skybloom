@@ -1,11 +1,10 @@
-local LogService = game:GetService("LogService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local LoggerManager = require(ReplicatedStorage.Shared.Core.LoggerManager)
 
-local HoenLogger = LogService
+local HoenLogger = LoggerManager:CreateLogger("HoenKnit", "System")
 local HoenKnit = {}
 
 -- * Types
