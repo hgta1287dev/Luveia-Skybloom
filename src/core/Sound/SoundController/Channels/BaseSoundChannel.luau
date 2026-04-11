@@ -23,7 +23,7 @@ function SoundChannel.new(): SoundChannel
 		group = Instance.new("SoundGroup"),
 		sounds = {},
 		volume = 1,
-	}, SoundChannel)
+	}, SoundChannel) :: SoundChannel
 
 	self:Init()
 	return self
